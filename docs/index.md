@@ -4,22 +4,19 @@ title: Project Overview
 permalink: /
 exclude: true
 ---
-# **Project Title**
-
-*TinyODOM-EX(tension)*
-
-
 <sub>*(Optional: Replace with a conceptual figure or meaningful image.)*</sub>
-<div style="text-align: left">
-  <img src="./assets/img/UCLA_Samueli_ECE_block-1.png" alt="logo" width="100" />
+<div style="text-align: center">
+  <img src="./assets/img/UCLA_Samueli_ECE_block-1.png" alt="logo" width="500" />
 </div>
 
+# **TinyODOM-EX(tension)**
 
----
+Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))  
 
-## 👥 **Team**
-
-- Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))  
+<sub>*(Optional: Replace with a conceptual figure or meaningful image.)*</sub>
+<div style="text-align: center">
+  <img src="./assets/img/TinyODOM-EX logo.png" alt="logo" width="500" />
+</div>
 
 ---
 
@@ -40,7 +37,6 @@ This should be a standalone “TL;DR” of your project.
 
 - [Midterm Checkpoint Slides](http://https://docs.google.com/presentation/d/1UtyWay7o1q8KnlKmfcb9YPXjvYXP0kHzi5wXddbCKxM/edit?usp=sharing)  
 - [Final Presentation Slides](http://)
-- If Needed: Links to have any videos demonstrating your project
 
 ---
 
