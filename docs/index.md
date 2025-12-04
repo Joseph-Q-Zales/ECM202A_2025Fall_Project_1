@@ -25,8 +25,15 @@ Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))
 - Approach: extend TinyODOM NAS with Optuna, hardware in the loop BLE33 measurements, and a modernized TFLite Micro plus Arduino toolchain
 - Key results: accuracy latency memory vs TinyODOM baselines on BLE33, plus first energy aware NAS curves and lessons from the failed RP2040 path
 *- Probs write at the end*
----
 
+## **Slides**
+
+- [Midterm Checkpoint Slides](http://https://docs.google.com/presentation/d/1UtyWay7o1q8KnlKmfcb9YPXjvYXP0kHzi5wXddbCKxM/edit?usp=sharing)  
+- [Final Presentation Slides](http://)
+
+---
+# Table of Contents:
+- [Table of Contents:](#table-of-contents)
 - [**1. Introduction**](#1-introduction)
     - [**1.1 Motivation \& Objective**](#11-motivation--objective)
     - [**1.2 State of the Art \& Its Limitations**](#12-state-of-the-art--its-limitations)
@@ -45,20 +52,14 @@ Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
-    - [**7.a. Datasets**](#7a-datasets)
-    - [**7.b. Software**](#7b-software)
+    - [**7.1. Datasets**](#71-datasets)
+    - [**7.2. Software**](#72-software)
 - [🧭 **Guidelines for a Strong Project Website**](#-guidelines-for-a-strong-project-website)
 - [📊 **Minimum vs. Excellent Rubric**](#-minimum-vs-excellent-rubric)
 - [Project Abstract](#project-abstract)
     - [Project Video](#project-video)
 - [Project Motivation](#project-motivation)
 - [System Block Diagram](#system-block-diagram)
-
-
-## **Slides**
-
-- [Midterm Checkpoint Slides](http://https://docs.google.com/presentation/d/1UtyWay7o1q8KnlKmfcb9YPXjvYXP0kHzi5wXddbCKxM/edit?usp=sharing)  
-- [Final Presentation Slides](http://)
 
 ---
 
@@ -131,6 +132,7 @@ Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))
 ### **3.1 TinyODOM-EX System Architecture**
 - Split pipeline into GPU side NAS client and embedded HIL server
   - NAS client samples hyperparameters, trains candidate TCNs, evaluates on validation data, and requests hardware measurements from the HIL server
+  - ~8m combinations
 - HIL server handles TFLite export, C plus plus generation, Arduino CLI compilation, uploading to BLE33, and collection of latency and energy metrics over serial
 - Use ZeroMQ between NAS client and HIL server and store configuration and roles in YAML and shared utilities so runs are reproducible and can move between machines without code edits
 
@@ -204,13 +206,13 @@ This should synthesize—not merely repeat—your results.
 
 # **7. Supplementary Material**
 
-### **7.a. Datasets**
+### **7.1. Datasets**
 
 - Describe OxIOD: source, URL, sensor modalities, collection settings, and which subsets you used
 - Data format: raw IMU streams, trajectories, and any intermediate outputs your pipeline writes (windowed tensors, cached datasets)
 - Preprocessing steps: extraction, normalization, window generation, split restoration, and how prepare_oxiod.py makes this reproducible for other users
   
-### **7.b. Software**
+### **7.2. Software**
 
 - External libraries: TensorFlow and TFLite Micro versions, Optuna, ZeroMQ, Arduino CLI, and any plotting or logging libraries
   - include talk of the using the shell scripts and having everything internal to both the conda environment and the folder
