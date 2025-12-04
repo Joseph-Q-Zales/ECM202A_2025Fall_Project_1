@@ -4,7 +4,7 @@ title: TinyODOM-EX(tension)
 permalink: /
 exclude: true
 ---
-<sub>*(Optional: Replace with a conceptual figure or meaningful image.)*</sub>
+
 <div style="text-align: center">
   <img src="./assets/img/UCLA_Samueli_ECE_block-1.png" alt="logo" width="500" />
 </div>
@@ -15,6 +15,84 @@ Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))
 <sub>*(Optional: Replace with a conceptual figure or meaningful image.)*</sub>
 <div style="text-align: center">
   <img src="./assets/img/TinyODOM-EX logo.png" alt="logo" width="500" />
+</div>
+
+<style>
+.triple-download-btn {
+  display: flex;
+  border: 1px solid #0366d6;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 1.5rem 0;
+}
+
+/* Each third of the button */
+.triple-download-btn a {
+  flex: 1;
+  text-decoration: none;
+  text-align: center;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+/* Small "download" / "view on" text */
+.triple-download-btn .label-small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+/* Big "ZIP file" / "TAR Ball" / "GitHub" text */
+.triple-download-btn .label-big {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* Colors per segment */
+.triple-download-btn a:nth-child(1),
+.triple-download-btn a:nth-child(2) {
+  background: #f6f8fa;
+  color: #0366d6;
+}
+
+.triple-download-btn a:nth-child(2) {
+  border-left: 1px solid #e1e4e8;
+  border-right: 1px solid #e1e4e8;
+}
+
+.triple-download-btn a:nth-child(3) {
+  background: #24292e;
+  color: #ffffff;
+}
+
+/* Hover state */
+.triple-download-btn a:hover {
+  background: #0366d6;
+  color: #ffffff;
+}
+</style>
+
+<div class="triple-download-btn">
+  <a href="https://github.com/Joseph-Q-Zales/ECM202A_2025Fall_Project_1/zipball/main">
+    <span class="label-small">Download</span>
+    <span class="label-big">ZIP file</span>
+  </a>
+
+  <a href="https://github.com/Joseph-Q-Zales/ECM202A_2025Fall_Project_1/tarball/main">
+    <span class="label-small">Download</span>
+    <span class="label-big">TAR Ball</span>
+  </a>
+
+  <a href="https://github.com/Joseph-Q-Zales/ECM202A_2025Fall_Project_1">
+    <span class="label-small">View on</span>
+    <span class="label-big">GitHub</span>
+  </a>
 </div>
 
 ---
