@@ -5,14 +5,8 @@ permalink: /
 exclude: true
 ---
 
-<div style="text-align: center">
-  <img src="./assets/img/UCLA_Samueli_ECE_block-1.png" alt="logo" width="500" />
-</div>
+Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))  
 
-
-Joseph Zales (jzales (at) ucla.edu, [GitHub](https://github.com/Joseph-Q-Zales))  
-
-<sub>*(Optional: Replace with a conceptual figure or meaningful image.)*</sub>
 <div style="text-align: center">
   <img src="./assets/img/TinyODOM-EX logo.png" alt="logo" width="500" />
 </div>
@@ -326,6 +320,9 @@ This should synthesize—not merely repeat—your results.
 | **Reproducibility**  | Missing dataset/software details                               | Clear dataset description, preprocessing, parameters, software environment, instructions   |
 
 
+<div style="text-align: center">
+  <img src="./assets/img/UCLA_Samueli_ECE_block-1.png" alt="logo" width="300" />
+</div>
 
 # Project Abstract
 <!-- The project abstract should be a short (< 200 words) summary of what your project does -->
