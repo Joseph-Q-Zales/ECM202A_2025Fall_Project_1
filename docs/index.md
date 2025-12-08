@@ -397,18 +397,7 @@ The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware
 
 Figure X shows the tradeoff between aggregate RMSE over \(v_x\) and \(v_y\) and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the nondominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
 
-The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see Section [3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. This knee occurs prior to the real-time boundary suggesting that most of the benefit of the accuracy–latency tradeoff is doable.
-
-
-- Evaluate tradeoff between accuracy (RMSE) and latency
-- Figures
-  - Accuracy–latency Pareto front (non-dominated points highlighted)
-  - Hypervolume progression vs completed trials with reference point
-  - Optuna parallel coordinates: key hyperparameters vs accuracy and latency
-- Interpretation
-  - Shape and “knee” of the accuracy–latency front
-  - Whether the front is still moving at the end of the trial budget
-  - Hyperparameter patterns along the Pareto front
+The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see Section [3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. In practice, this creates a clear knee in the accuracy–latency curve just before the real-time boundary where small movements past this region increase latency noticeably while improving error only slightly. Such knees on a Pareto front are often used as preferred compromise points in multi-objective decision making [Branke].
 
 ### **4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**
 
@@ -422,6 +411,7 @@ The vertical 200 ms line marks the real-time budget implied by the streaming con
 </figure>
 
 Figure X shows how nb_filters and kernel_size correlate with accuracy and latency in the accuracy versus latency multi objective run. The top row indicates that nb_filters is a strong driver of both accuracy and latency. The nb_filters–RMSE panel includes a simple logarithmic best-fit curve, which highlights a diminishing returns pattern: error falls quickly as channel count increases from very small models, then tapers off once nb_filters reaches the mid range. The nb_filters–latency panel includes a linear best-fit line, which emphasizes the approximately linear growth of latency with channel count despite some scatter. Together, these two trends show that the most accurate models are also among the slowest, and that increasing nb_filters beyond the mid range mostly increases cost while providing only modest additional accuracy.
+
 The bottom row shows that kernel_size is a much weaker knob. Good and bad models are spread across the kernel sizes explored, and there is no clear monotonic trend between kernel_size and either RMSE or latency. Some kernel sizes contain both low error and high error models, and latency varies widely within each kernel size. This is consistent with kernel_size behaving as a secondary design choice once the receptive field is sufficient, while nb_filters primarily controls both model quality and computational cost.
 
 ---
@@ -444,17 +434,6 @@ Figure X shows the tradeoff in the accuracy–energy space for the energy-aware 
 
 This shape suggests a natural operating regime for deployment. Very low energy models exist, but they incur substantial error. Increasing energy per inference up to the mid range buys most of the available accuracy improvement, while pushing to very high energy models produces only small additional gains. Together with the accuracy–latency Pareto in Figure X in section [4.4.1](#441-pareto-front-and-convergence), these curve show that the search space contains models that are both reasonably accurate, energy efficient and operate in a real-time setting.
 
-
-- Evaluate tradeoff between accuracy (RMSE) and energy per inference
-- Figures
-  - Accuracy–energy Pareto front (non-dominated points)
-  - Latency vs accuracy Pareto constructed by joining HIL logs and Optuna trials
-  - Hypervolume progression for the accuracy–energy study
-- Interpretation
-  - Comparison of the accuracy–energy front to the accuracy–latency front
-  - Whether optimizing for energy yields different architectures than optimizing for latency
-  - Evidence of diminishing returns in hypervolume vs trials
-
 ### **4.5.2 Energy-Oriented Hyperparameter Structure**
 
 <figure style="text-align: left">
@@ -467,6 +446,7 @@ This shape suggests a natural operating regime for deployment. Very low energy m
 </figure>
 
 Figure X shows that for the energy aware multi objective study, nb_filters are still the dominant hyperparameter. The nb_filters–RMSE panel includes a logarithmic best-fit curve and shows that increasing channel count from very small models to the mid range generally reduces error, after which gains tend to taper off. The nb_filters–energy panel includes a linear best-fit line and illustrates that energy per inference increases approximately linearly with nb_filters, with moderate spread due to other architectural choices. Together, these plots indicate that channel count controls a smooth accuracy–energy tradeoff: larger nb_filters provide some accuracy improvements but at a predictable energy cost.
+
 Kernel_size versus RMSE and energy was also examined (plots not shown to avoid redundancy) and, as in the accuracy–latency run, did not exhibit strong structure. This reinforces that kernel_size behaves as a secondary knob in the current search space, while nb_filters primarily determines both model quality and resource usage.
   
   ---
@@ -631,6 +611,11 @@ Kernel_size versus RMSE and energy was also examined (plots not shown to avoid r
 # **6. References**
 
 *Provide full citations for all sources (academic papers, websites, etc.) referenced and all software and datasets uses.*
+
+*TODO* fix citations so they are properly numbered.
+
+[Branke] J. Branke, K. Deb, H. Dierolf, and M. Osswald, “Finding Knees in Multi-objective Optimization,” in Parallel Problem Solving from Nature - PPSN VIII, vol. 3242, X. Yao, E. K. Burke, J. A. Lozano, J. Smith, J. J. Merelo-Guervós, J. A. Bullinaria, J. E. Rowe, P. Tiňo, A. Kabán, and H.-P. Schwefel, Eds., in Lecture Notes in Computer Science, vol. 3242. , Berlin, Heidelberg: Springer Berlin Heidelberg, 2004, pp. 722–731. doi: 10.1007/978-3-540-30217-9_73.
+
 
 ---
 
