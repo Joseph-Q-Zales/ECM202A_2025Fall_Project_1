@@ -335,17 +335,19 @@ where the energy penalty is active only in the energy-aware run. Higher scores c
 #### **4.3.1 Effect of Energy Logging on NAS Outcome**
 
 <figure style="text-align: left">
-<figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
-  <strong>Table X.</strong> Heuristic contributions of each term to the absolute scalar score for the single-objective NAS runs on BLE33 (75 trials each). The score combines accuracy, resource usage, latency, and optional energy penalties.
-</figcaption>
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table X.</strong> Heuristic contributions of each term to the absolute scalar score for the single-objective NAS runs on BLE33 (75 trials each). The score combines accuracy, resource usage, latency, and optional energy penalties.
+  </figcaption>
+</figure>
 
 
 | Term          | No-energy score (%) | Energy-aware score (%) |
 |--------------|---------------------|------------------------|
 | model_acc    | 77.4                | 55.1                   |
 | latency_term | 21.9                | 9.9                    |
-| energy_term  | --                 | 34.7                   |
+| energy_term  | --                  | 34.7                   |
 | resource_term| 0.7                 | 0.4                    |
+
 
 Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: model\_acc accounts for about 77% of the absolute score, latency\_term contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of model\_acc drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
 
