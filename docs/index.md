@@ -323,7 +323,34 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 ### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 1 and 2)**
 
+The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term \(A = -(R_x + R_y)\), a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. The overall score is
+
+\[
+\text{score} = A + 0.01 \, M - \text{lat\_pen} - \text{energy\_pen},
+\]
+** NOTE TO SELF: MAYBE ALREADY DISCUSSED EARLIER AND IF SO, DELETE HERE AND JUST REFERENCE
+
+where the energy penalty is active only in the energy-aware run. Higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
+
 #### **4.3.1 Effect of Energy Logging on NAS Outcome**
+
+<figure style="text-align: left">
+<figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+  <strong>Table X.</strong> Heuristic contributions of each term to the absolute scalar score for the single-objective NAS runs on BLE33 (75 trials each). The score combines accuracy, resource usage, latency, and optional energy penalties.
+</figcaption>
+
+
+| Term          | No-energy score (%) | Energy-aware score (%) |
+|--------------|---------------------|------------------------|
+| model_acc    | 77.4                | 55.1                   |
+| latency_term | 21.9                | 9.9                    |
+| energy_term  | --                 | 34.7                   |
+| resource_term| 0.7                 | 0.4                    |
+
+Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: model\_acc accounts for about 77% of the absolute score, latency\_term contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of model\_acc drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
+
+The mean model\_acc value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
+
 
 - Contrast Study 1 (no energy logging) vs Study 2 (energy logging added to score)
 - Figures
@@ -372,16 +399,6 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
   </figcaption>
 </figure>
 
-- Figures  
-  - **Arrange as a 2×2 grid:**  
-    - (top-left) nb_filters vs RMSE **with a simple log-shaped best-fit curve**  
-    - (top-right) nb_filters vs Latency **with a simple linear best-fit line**  
-    - (bottom-left) kernel_size vs RMSE  
-    - (bottom-right) kernel_size vs Latency  
-
-- **NOTE TO SELF: make sure these four plots are in a 2×2 subplot configuration and that the nb_filters panels include their best-fit curves before pushing.**
-
-- Interpretation:
 Figure X shows how nb_filters and kernel_size correlate with accuracy and latency in the accuracy versus latency multi objective run. The top row indicates that nb_filters is a strong driver of both accuracy and latency. The nb_filters–RMSE panel includes a simple logarithmic best-fit curve, which highlights a diminishing returns pattern: error falls quickly as channel count increases from very small models, then tapers off once nb_filters reaches the mid range. The nb_filters–latency panel includes a linear best-fit line, which emphasizes the approximately linear growth of latency with channel count despite some scatter. Together, these two trends show that the most accurate models are also among the slowest, and that increasing nb_filters beyond the mid range mostly increases cost while providing only modest additional accuracy.
 The bottom row shows that kernel_size is a much weaker knob. Good and bad models are spread across the kernel sizes explored, and there is no clear monotonic trend between kernel_size and either RMSE or latency. Some kernel sizes contain both low error and high error models, and latency varies widely within each kernel size. This is consistent with kernel_size behaving as a secondary design choice once the receptive field is sufficient, while nb_filters primarily controls both model quality and computational cost.
 
