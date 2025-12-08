@@ -349,8 +349,8 @@ where the energy penalty is active only in the energy-aware run. Higher scores c
 
 | Term          | No-energy score (%) | Energy-aware score (%) |
 |--------------|---------------------|------------------------|
-| $$model_acc$$    | 77.4                | 55.1                   |
-| $$latency_term$$ | 21.9                | 9.9                    |
+| model_acc$   | 77.4                | 55.1                   |
+| latency_term | 21.9                | 9.9                    |
 | energy_term  | --                  | 34.7                   |
 | resource_term| 0.7                 | 0.4                    |
 
@@ -387,13 +387,18 @@ The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware
 #### **4.4.1 Pareto Front and Convergence**
 
 <figure style="text-align: left">
-  <img src="./assets/plots/MO_no_E_Pareto_latency_vs_rmse.png"
+  <img src="./assets/plots/MO_no_E_optuna_pareto_front.png"
        alt="Accuracy–latency Pareto front for multi-objective NAS without energy term"
        width="650" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure X.</strong> Accuracy–latency Pareto front for the multi-objective NAS run on the BLE33 without an explicit energy term. Blue points are individual trials, plotted by latency and aggregate (vector) RMSE. The red curve marks the Pareto-optimal set, and the vertical dashed line indicates the 200 ms real-time latency budget.
+    <strong>Figure X.</strong> Accuracy–latency Pareto front for the multi-objective NAS run on the BLE33 without an explicit energy term. Blue points are individual trials, plotted by latency and aggregate  RMSE. The red curve marks the Pareto-optimal set. The vertical dashed line at 200ms indicates the real-time latency budget implied by the 100Hz sampling rate and a stride of 20 samples between windows.
   </figcaption>
 </figure>
+
+Figure X shows the tradeoff between aggregate RMSE over \(v_x\) and \(v_y\) and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the nondominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
+
+The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see Section [3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. This knee occurs prior to the real-time boundary suggesting that most of the benefit of the accuracy–latency tradeoff is doable.
+
 
 - Evaluate tradeoff between accuracy (RMSE) and latency
 - Figures
@@ -424,6 +429,21 @@ The bottom row shows that kernel_size is a much weaker knob. Good and bad models
 ### **4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**
 
 #### **4.5.1 Pareto Front in Accuracy–Energy Space**
+
+<figure style="text-align: left">
+  <img src="./assets/plots/MO_EA_optuna_pareto_front.png"
+       alt="Accuracy–energy Pareto front for multi-objective energy-aware NAS"
+       width="650" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Accuracy–energy Pareto front for the multi-objective NAS run with an explicit energy objective. Blue points show individual trials plotted by energy per inference (mJ) and aggregate RMSE. The red curve denotes the Pareto-optimal set. The target energy used in the scoring function, 10mJ, corresponds to running within the 200ms latency budget at a nominal power of 50mW.
+  </figcaption>
+</figure>
+
+
+Figure X shows the tradeoff in the accuracy–energy space for the energy-aware multi objective run. As in the latency plot in section [4.4.1](#441-pareto-front-and-convergence), the blue points indicate the search covers a broad spectrum of designs, while the red curve again highlights the nondominated trials. Again, similar to the accuracy-latency plot, the Pareto front has a steep initial segment moving from the lowest energy models to more expensive trials initially yields large reductions in aggregate RMSE. Around a mid range energy level, near the 10mJ target implied by the 200ms latency budget and a 50mW nominal power draw, the curve indicates diminishing returns.
+
+This shape suggests a natural operating regime for deployment. Very low energy models exist, but they incur substantial error. Increasing energy per inference up to the mid range buys most of the available accuracy improvement, while pushing to very high energy models produces only small additional gains. Together with the accuracy–latency Pareto in Figure X in section [4.4.1](#441-pareto-front-and-convergence), these curve show that the search space contains models that are both reasonably accurate, energy efficient and operate in a real-time setting.
+
 
 - Evaluate tradeoff between accuracy (RMSE) and energy per inference
 - Figures
