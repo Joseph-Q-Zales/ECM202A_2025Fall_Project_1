@@ -363,22 +363,12 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 ### 4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search
 
-<div style="text-align: left">
-  <img src="./assets/plots/MO_no_E_collated_hyperparam_plots_grid_Latency.png"
-       alt="MO_no_E_collated_hyperparam_plots_grid_Latency"
-       width="500" />
-  <div style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure 3.</strong> Hypervolume vs. optimization step for latency-only NAS.
-  </div>
-</div>
-
-
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_collated_hyperparam_plots_grid_Latency.png"
-       alt="MO_no_E_collated_hyperparam_plots_grid_Latency"
-       width="500" />
+       alt="Multiple Objective hyperparamameters plots nb filters vs accuracy / latency"
+       width="700" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure 3.</strong> Hypervolume vs. optimization step for latency-only NAS.
+    <strong>Figure x.</strong> Hyperparameter sensitivity in the accuracy–latency multi-objective run on the BLE33. Top: nb_filters versus vector RMSE (left, with a logarithmic best-fit curve) and latency per inference (right, with a linear best-fit line). Bottom: kernel_size versus vector RMSE (left) and latency (right).
   </figcaption>
 </figure>
 
@@ -392,10 +382,8 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - **NOTE TO SELF: make sure these four plots are in a 2×2 subplot configuration and that the nb_filters panels include their best-fit curves before pushing.**
 
 - Interpretation:
-  Figure X shows how nb_filters and kernel_size correlate with accuracy and latency in the accuracy–latency multi objective run. The top row indicates that nb_filters is a strong driver of both accuracy and latency. The nb_filters–RMSE panel includes a simple logarithmic best-fit curve, which highlights a diminishing-returns pattern: error falls quickly as channel count increases from very small models, then flattens once nb_filters reaches the mid range. The nb_filters–latency panel includes a linear best-fit line, which emphasizes the approximately linear growth of latency with channel count despite some scatter. Together, these two trends show that the most accurate models are also among the slowest, and that additional filters beyond roughly 32 mostly increase cost rather than accuracy.  
-
-  The bottom row shows that kernel_size is a much weaker knob. Good and bad models are spread across the kernel sizes explored, and there is no clear monotonic trend between kernel_size and either RMSE or latency. Some kernel sizes contain both low-error and high-error models, and latency varies widely within each kernel size. This is consistent with kernel_size behaving as a secondary design choice once the receptive field is sufficient, while nb_filters primarily controls both model quality and computational cost.
-
+Figure X shows how nb_filters and kernel_size correlate with accuracy and latency in the accuracy versus latency multi objective run. The top row indicates that nb_filters is a strong driver of both accuracy and latency. The nb_filters–RMSE panel includes a simple logarithmic best-fit curve, which highlights a diminishing returns pattern: error falls quickly as channel count increases from very small models, then tapers off once nb_filters reaches the mid range. The nb_filters–latency panel includes a linear best-fit line, which emphasizes the approximately linear growth of latency with channel count despite some scatter. Together, these two trends show that the most accurate models are also among the slowest, and that increasing nb_filters beyond the mid range mostly increases cost while providing only modest additional accuracy.
+The bottom row shows that kernel_size is a much weaker knob. Good and bad models are spread across the kernel sizes explored, and there is no clear monotonic trend between kernel_size and either RMSE or latency. Some kernel sizes contain both low error and high error models, and latency varies widely within each kernel size. This is consistent with kernel_size behaving as a secondary design choice once the receptive field is sufficient, while nb_filters primarily controls both model quality and computational cost.
 
 ---
 
@@ -415,22 +403,17 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 ### 4.5.2 Energy-Oriented Hyperparameter Structure
 
-<div style="text-align: left">
-  <img src="./assets/plots/MO_EA_collated_hyperparam_plots_nb_filters_only_Energy.png" alt="MO_EA_collated_hyperparam_plots_nb_filters_only_Energy" width="500" />
-</div>
+<figure style="text-align: left">
+  <img src="./assets/plots/MO_EA_collated_hyperparam_plots_nb_filters_only_Energy.png"
+       alt="Multiple Objective Energy Aware hyperparameters plots nb filters vs accuracy / energy"
+       width="700" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure x.</strong> Effect of nb_filters on accuracy and energy per inference in the accuracy–energy multi objective NAS run on the BLE33. Left: nb_filters versus vector RMSE with a logarithmic best-fit curve. Right: nb_filters versus energy per inference with a linear best-fit line..
+  </figcaption>
+</figure>
 
-
-- Figures  
-  - Side-by-side plots:  
-    - nb_filters vs RMSE **with a logarithmic best-fit curve**  
-    - nb_filters vs Energy per inference **with a linear best-fit line**
-
-- **NOTE TO SELF: arrange these two plots side by side and include the best-fit curves before pushing.**
-
-- Interpretation / suggested text  
-  Figure Y focuses on the energy aware multi objective run and again highlights nb_filters as the dominant hyperparameter. The nb_filters–RMSE panel includes a logarithmic best-fit curve and shows that increasing channel count from very small models to the mid range substantially reduces error, after which gains taper off. The nb_filters–energy panel includes a linear best-fit line and illustrates that energy per inference increases approximately linearly with nb_filters, with moderate spread due to other architectural choices. Together, these plots indicate that channel count controls a smooth accuracy–energy tradeoff: larger nb_filters provide some accuracy improvements but at a predictable energy cost.  
-
-  Kernel_size versus RMSE and energy was also examined (plots omitted for space) and, as in the accuracy–latency run, did not exhibit strong structure. This reinforces that kernel_size behaves as a secondary knob in the current search space, while nb_filters primarily determines both model quality and resource usage.
+Figure X shows that for the energy aware multi objective study, nb_filters are still the dominant hyperparameter. The nb_filters–RMSE panel includes a logarithmic best-fit curve and shows that increasing channel count from very small models to the mid range generally reduces error, after which gains tend to taper off. The nb_filters–energy panel includes a linear best-fit line and illustrates that energy per inference increases approximately linearly with nb_filters, with moderate spread due to other architectural choices. Together, these plots indicate that channel count controls a smooth accuracy–energy tradeoff: larger nb_filters provide some accuracy improvements but at a predictable energy cost.
+Kernel_size versus RMSE and energy was also examined (plots not shown to avoid redundancy) and, as in the accuracy–latency run, did not exhibit strong structure. This reinforces that kernel_size behaves as a secondary knob in the current search space, while nb_filters primarily determines both model quality and resource usage.
   
   ---
 
