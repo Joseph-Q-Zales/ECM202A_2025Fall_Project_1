@@ -130,10 +130,10 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
       - [**4.3.2 Empirical Relationship Between Energy and Latency**](#432-empirical-relationship-between-energy-and-latency)
     - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
       - [**4.4.1 Pareto Front and Convergence**](#441-pareto-front-and-convergence)
-    - [4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search](#442-hyperparameter-sensitivity-for-latency-oriented-search)
+    - [**4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**](#442-hyperparameter-sensitivity-for-latency-oriented-search)
     - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
       - [**4.5.1 Pareto Front in Accuracy–Energy Space**](#451-pareto-front-in-accuracyenergy-space)
-    - [4.5.2 Energy-Oriented Hyperparameter Structure](#452-energy-oriented-hyperparameter-structure)
+    - [**4.5.2 Energy-Oriented Hyperparameter Structure**](#452-energy-oriented-hyperparameter-structure)
     - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
       - [**4.6.1 Summary of Best Models Across Studies**](#461-summary-of-best-models-across-studies)
       - [**4.6.2 NAS Trial Budget and Practical Convergence**](#462-nas-trial-budget-and-practical-convergence)
@@ -238,6 +238,9 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - Use limited budgeting and calibration passes: small fixed subset of windows for calibration, quantization, and warm up runs so that HIL costs stay manageable during NAS
 
 ### **3.3 NAS Objective, Search Space, and Training Procedure**
+ 
+The latency budget in the scoring function is set to 200 ms, derived from the OxIOD streaming configuration rather than chosen arbitrarily. The IMU is sampled at 100 Hz, so each sample corresponds to 10 ms. Following TinyODOM, the NAS uses windows of 200 samples (2 s of history) with a stride of 20 samples between consecutive windows [1]. A new window therefore arrives every \(20 \times 10\ \text{ms} = 200\ \text{ms}\). To keep up with this stream in real time, each model must produce one prediction per window within at most 200 ms of compute latency. This bound is used as the latency budget \(L_b\) in the scoring function and in the latency penalty term for both energy aware and latency only scoring runs.
+
 - Temporal convolutional network search space
   - depth, kernel sizes, dilation pattern, channel counts, residual connections, and heads that predict velocity components
 - Objective design
@@ -323,11 +326,14 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 ### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 1 and 2)**
 
-The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term \(A = -(R_x + R_y)\), a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. The overall score is
+The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term $\(A = -(R_x + R_y)\)$, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. The overall score is
 
+$$
 \[
 \text{score} = A + 0.01 \, M - \text{lat\_pen} - \text{energy\_pen},
 \]
+$$
+
 ** NOTE TO SELF: MAYBE ALREADY DISCUSSED EARLIER AND IF SO, DELETE HERE AND JUST REFERENCE
 
 where the energy penalty is active only in the energy-aware run. Higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
@@ -343,15 +349,15 @@ where the energy penalty is active only in the energy-aware run. Higher scores c
 
 | Term          | No-energy score (%) | Energy-aware score (%) |
 |--------------|---------------------|------------------------|
-| model_acc    | 77.4                | 55.1                   |
-| latency_term | 21.9                | 9.9                    |
+| $$model_acc$$    | 77.4                | 55.1                   |
+| $$latency_term$$ | 21.9                | 9.9                    |
 | energy_term  | --                  | 34.7                   |
 | resource_term| 0.7                 | 0.4                    |
 
 
-Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: model\_acc accounts for about 77% of the absolute score, latency\_term contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of model\_acc drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
+Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: $$model\_acc$$ accounts for about 77% of the absolute score, $$latency\_term$$ contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of $$model\_acc$$ drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
 
-The mean model\_acc value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
+The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
 
 
 - Contrast Study 1 (no energy logging) vs Study 2 (energy logging added to score)
@@ -380,6 +386,15 @@ The mean model\_acc value becomes slightly more negative in the energy-aware run
 
 #### **4.4.1 Pareto Front and Convergence**
 
+<figure style="text-align: left">
+  <img src="./assets/plots/MO_no_E_Pareto_latency_vs_rmse.png"
+       alt="Accuracy–latency Pareto front for multi-objective NAS without energy term"
+       width="650" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Accuracy–latency Pareto front for the multi-objective NAS run on the BLE33 without an explicit energy term. Blue points are individual trials, plotted by latency and aggregate (vector) RMSE. The red curve marks the Pareto-optimal set, and the vertical dashed line indicates the 200 ms real-time latency budget.
+  </figcaption>
+</figure>
+
 - Evaluate tradeoff between accuracy (RMSE) and latency
 - Figures
   - Accuracy–latency Pareto front (non-dominated points highlighted)
@@ -390,7 +405,7 @@ The mean model\_acc value becomes slightly more negative in the energy-aware run
   - Whether the front is still moving at the end of the trial budget
   - Hyperparameter patterns along the Pareto front
 
-### 4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search
+### **4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_collated_hyperparam_plots_grid_Latency.png"
@@ -420,7 +435,7 @@ The bottom row shows that kernel_size is a much weaker knob. Good and bad models
   - Whether optimizing for energy yields different architectures than optimizing for latency
   - Evidence of diminishing returns in hypervolume vs trials
 
-### 4.5.2 Energy-Oriented Hyperparameter Structure
+### **4.5.2 Energy-Oriented Hyperparameter Structure**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_collated_hyperparam_plots_nb_filters_only_Energy.png"
@@ -603,8 +618,8 @@ Kernel_size versus RMSE and energy was also examined (plots not shown to avoid r
 
 ### **7.1. Datasets**
 
-- Describe OxIOD: source, URL, sensor modalities, collection settings, and which subsets you used
-- Data format: raw IMU streams, trajectories, and any intermediate outputs your pipeline writes (windowed tensors, cached datasets)
+- OxIOD: source, URL, sensor modalities, collection settings, and which subsets used
+- Data format: raw IMU streams, trajectories, and any intermediate outputs the pipeline writes (windowed tensors, cached datasets)
 - Preprocessing steps: extraction, normalization, window generation, split restoration, and how prepare_oxiod.py makes this reproducible for other users
   
 ### **7.2. Software**
