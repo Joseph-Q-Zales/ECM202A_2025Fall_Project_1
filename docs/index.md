@@ -452,7 +452,7 @@ Figure X shows that for the energy aware multi objective study, `nb_filters` are
 `kernel_size` versus RMSE and energy was also examined (plots not shown to avoid redundancy) and, as in the accuracy–latency run, did not exhibit strong structure. This reinforces that `kernel_size` behaves as a secondary knob in the current search space, while `nb_filters` primarily determines both model quality and resource usage.
 
 <figure style="text-align: left">
-  <img src="./assets/plots/MO_EA_hyperparam_importance.png"
+  <img src="./assets/plots/MO_EA_optuna_hyperparameter_importances.png"
        alt="Optuna hyperparameter importance for accuracy–energy multi-objective NAS"
        width="450" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
