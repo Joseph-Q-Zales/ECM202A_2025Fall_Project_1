@@ -123,11 +123,13 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
       - [**3.2.2 Data Processing**](#322-data-processing)
     - [**3.3 NAS Objective, Search Space, and Training Procedure**](#33-nas-objective-search-space-and-training-procedure)
       - [**3.3.1 Objective Functions**](#331-objective-functions)
-- [\\text{score}](#textscore)
-  - [0.01\\left(\\frac{\\mathrm{RAM}}{\\mathrm{maxRAM}} + \\frac{\\mathrm{Flash}}{\\mathrm{maxFlash}}\\right)](#001leftfracmathrmrammathrmmaxram--fracmathrmflashmathrmmaxflashright)
-  - [\\mathrm{LatencyPenalty}](#mathrmlatencypenalty)
+      - [**3.3.2 Training and Pruning**\*](#332-training-and-pruning)
     - [**3.4 Hardware in the Loop Measurement and Implementation**](#34-hardware-in-the-loop-measurement-and-implementation)
     - [**3.5 Key Design Decisions and Tradeoffs**](#35-key-design-decisions-and-tradeoffs)
+      - [**3.5.1 Optuna-based NAS instead of Mango**](#351-optuna-based-nas-instead-of-mango)
+      - [**3.5.2 Separate Energy-instrumented and Latency-Only Firmware**](#352-separate-energy-instrumented-and-latency-only-firmware)
+      - [**3.5.3 Dropping the Arduino Nano RP2040 Target From Final Studies**](#353-dropping-the-arduino-nano-rp2040-target-from-final-studies)
+      - [**3.5.4 Modular Refactor and YAML Configuration**](#354-modular-refactor-and-yaml-configuration)
 - [**4. Evaluation \& Results**](#4-evaluation--results)
     - [**4.1 Experimental Studies and Metrics**](#41-experimental-studies-and-metrics)
     - [**4.2 Reproducing TinyODOM on BLE33 (Study 1)**](#42-reproducing-tinyodom-on-ble33-study-1)
@@ -212,7 +214,8 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - Debugging across GPU and HIL processes
   - tracing failures that only show up on device during NAS runs, correlating ZeroMQ logs, serial output, and Optuna trial state
 
-### **1.6 Metrics of Success**  
+### **1.6 Metrics of Success** 
+The goal of this project is to create a  
 - Quantitative: accuracy metrics from OxIOD (RMSE, trajectory error), latency per inference on BLE33, memory footprint, and energy per inference
 - System level: stable unattended HIL runs over many NAS trials without manual intervention or board recovery
 - Scientific: clear visualization of tradeoffs between accuracy, latency, memory, and energy, plus comparison to TinyODOM style baselines
@@ -229,7 +232,7 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 # **3. Technical Approach**
 
-This section describes the end-to-end TinyODOM-EX technical approach for hardware-aware neural architecture search of an inertial odometry model. At a high level, the system runs an automated loop where a black-box bayesian optimizer (in our case Optuna) suggests candidate temporal convolutional network (TCN) hyperparameters, models are trained and scored on a GPU using validation data, and selected candidates are exported to TensorFlow Lite Micro and deployed to an embedded target for on-device measurement. Metrics, such as latency and energy, are measured on the device-under-test (DUT) which we used an Arduino Nano 33 BLE Sense and returned to the search procedure to enforce real-time and resource constraints using hardware-grounded feedback. To make studies repeatable and easy to run, the implementation is modularized into a GPU-side NAS client, a hardware-in-the-loop server, dataset preparation utilities and firmware. The experiment parameters are set using a centralized YAML configuration.
+This section describes the end-to-end TinyODOM-EX technical approach for hardware-aware neural architecture search of an inertial odometry model. At a high level, the system runs an automated loop where a black-box hyperparameter optimizer (in our case Optuna) suggests candidate temporal convolutional network (TCN) hyperparameters, models are trained and scored on a GPU using validation data, and selected candidates are exported to TensorFlow Lite Micro and deployed to an embedded target for on-device measurement. metrics are measured on the device under test, an Arduino Nano 33 BLE Sense and returned to the search procedure to enforce real-time and resource constraints using hardware-grounded feedback. To make studies repeatable and easy to run, the implementation is modularized into a GPU-side NAS client, a hardware-in-the-loop server, dataset preparation utilities and firmware. The experiment parameters are set using a centralized YAML configuration.
 
 ### **3.1 TinyODOM-EX System Architecture**
 <figure style="text-align: left">
@@ -241,7 +244,7 @@ This section describes the end-to-end TinyODOM-EX technical approach for hardwar
   </figcaption>
 </figure>
 
-TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular pipeline with explicit GPU-side and hardware-side responsibilities. As summarized in Figure X, the NAS client runs on a GPU server and handles neural architecture search and training, while a separate hardware-in-the-loop (HIL) machine is responsible for conversion, compilation, deployment, and on-device measurement. This separation allows the use of a cloud (or off-premise) GPU server and a local hardware-in-the-loop machine for the flashing and telemetry. If the user has a GPU machine that can have devices plugged in, the code can be run from one machine as well. The communication between the two machines (or inter-machine) uses the ZeroMQ (ZMQ) library in a request-reply (REQ-REP) client/server functionality [CITE, ZMQ]. 
+TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular pipeline with explicit GPU-side and hardware-side responsibilities. As summarized in Figure X, the NAS client runs on a GPU server and handles neural architecture search and training, while a separate hardware-in-the-loop (HIL) machine is responsible for conversion, compilation, deployment, and on-device measurement. The system can run in a two-machine configuration (GPU server plus local HIL host) or a single-machine configuration when the GPU host has physical access to the DUT. The communication between the two machines (or inter-machine) uses the ZeroMQ (ZMQ) library in a request-reply (REQ-REP) client/server functionality [CITE, ZMQ]. 
 
 #### **3.1.1 Per-trial Workflow**
 <figure style="text-align: left">
@@ -250,11 +253,13 @@ TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular 
        width="600" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure Y.</strong> Per-trial workflow for TinyODOM-EX. Each trial trains and evaluates a candidate model on the GPU server, then exports to TFLite Micro, compiles and uploads firmware via Arduino CLI, and measures on-device metrics in the HIL loop. Trials may terminate early when candidates are infeasible or are pruned.
+    <strong>Figure XYZ.</strong> Per-trial workflow for TinyODOM-EX. Each trial trains and evaluates a candidate model on the GPU server, then exports to TFLite Micro, compiles and uploads firmware via Arduino CLI, and measures on-device metrics in the HIL loop. Trials may terminate early when candidates are infeasible or are pruned.
   </figcaption>
 </figure>
 
-Figure Y expands the system overview by showing the end-to-end steps executed for a single trial. Each Optuna trial corresponds to one sampled candidate architecture. The NAS client (the GPU server) sends the HIL server (the HIL machine) the hyperparameters, which are then built into a TensorFlow model, converted into a TensorFlow Lite Micro model, and compiled via the Arduino CLI [CITE, Arduino-CLI]. The CLI returns the RAM and Flash needed for this model. At this point, the arena, a preallocated block of RAM that TFLM uses for all runtime needs during inference, is either stepped up or down in size depending on if the model will fit on the board. If the arena search is exhausted, the trial stops there and is pruned so that the expensive step of uploading and model training is avoided. If an ideal arena size can be found, the model is uploaded to the DUT and inference is run with 10 windows. This is a departure from TinyODOM which only ran inference with one window [CITE, TinyODOM code]. By averaging the latency per window and the energy per inference across 10 windows, the startup cost is amortized and the true latency and energy per inference can be better determined. The latency per inference, the energy per inference, RAM and Flash size is then passed back to the GPU server in the ZMQ response. The GPU server then trains the candidate model and all of the metrics are returned to the NAS and incorporated into the study objective. 
+Figure Y expands the system overview by showing the end-to-end steps executed for a single trial. Each Optuna trial corresponds to one sampled candidate architecture. The NAS client (the GPU server) sends the HIL server (the HIL machine) the hyperparameters, which are then built into a TensorFlow model, converted into a TensorFlow Lite Micro model, and compiled via the Arduino CLI [CITE, Arduino-CLI]. The CLI returns the compiled RAM and flash sizes needed for this model. 
+
+At this point, the arena, the statically allocated tensor arena buffer used by TensorFlow Lite Micro to allocate activation tensors and operator scratch space at runtime [CITE, TFLM], is either stepped up or down in size depending on if the model will fit on the board. If TensorFlow Lite Micro cannot successfully allocate tensors within the arena (even after searching across allowable arena sizes), the trial stops here and is pruned so that the expensive steps of flashing and GPU training are avoided. If the arena search is exhausted, the trial stops there and is pruned so that the expensive step of uploading and model training is avoided. If an ideal arena size can be found, the model is uploaded to the DUT and inference is run with 10 windows. This is a departure from TinyODOM which only ran inference with one window [CITE, TinyODOM code].By averaging the latency per window (and energy per inference when the INA228 measurement path is enabled) across 10 windows, the startup cost is amortized and the true latency and energy per inference can be better determined. The latency per inference, the energy per inference, RAM and flash size is then passed back to the GPU server in the ZMQ response. The GPU server then trains the candidate model and all of the metrics are returned to the NAS and incorporated into the study objective. After receiving these hardware-grounded metrics, the GPU server trains the same candidate architecture and evaluates it on the validation split, then incorporates both validation accuracy and the returned hardware metrics into the study objective.
 
 #### **3.1.2 Configuration**
 TinyODOM-EX replaces hard-coded constants in the legacy notebook with a YAML configuration file (`nas_config.yaml`) that captures device settings, dataset parameters, training budgets, etc. This configuration file is shared between the GPU server and the HIL machine. At the end of the study, this configuration is copied into the study output directory so that each run is self-describing and can be reproduced. 
@@ -281,13 +286,13 @@ Similar to TinyODOM, this project uses the Oxford Inertial Odometry Dataset (OxI
        width="450" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure Y. Example OxIOD handheld sequence (first 120 seconds) visualized using Vicon ground truth. The trajectory illustrates the small-room operating envelope and the continuous nature of each sequence. </strong> .
+    <strong>Figure Y. </strong> Example OxIOD handheld sequence (first 120 seconds) visualized using Vicon ground truth. The trajectory illustrates the small-room operating envelope and the continuous nature of each sequence.
   </figcaption>
 </figure>
 
 Like TinyODOM, we split OxIOD at the sequence (file) level rather than the window level. This avoids the leakage that would occur if highly overlapping windows from the same underlying trajectory were distributed  across the train, validation and test sets. Each modality folder contains text files (`Train.txt`, `Valid.txt`, `Test.txt`) which list which trajectories belong to each split. TinyODOM-EX includes a script to generate this directory structure and split files after downloading OxIOD. This script is called `prepare_oxiod.py` and is located in the dataset_download_and_splits folder. 
 
-In this work, we used 71 trajectories in total, matching the trajectory count used by the TinyODOM reference implementation [CITE, TinyODOM code]. We partition these into 50 training trajectories, 14 validation trajectories and 7 test trajectories which is approximately a 70/20/10 split. This differs from TinyODOM which used a 85/5/10 split [CITE, TinyODOM]. Our motivation for using a larger validation split in TinyODOM-EX is that we explicitly train against validation loss during the NAS while the TinyODOM reference implementation trains with `model.fit` on the training data only (checkpointing on training loss) and then evaluates on the validation set after training. Whereas TinyODOM-EX passes the validation data into `model.fit`, checkpoints on teh validation loss and applies early stopping during the neural architecture search based on the validation loss [CITE, TinyODOM code]. Figure Y illustrates the first 120 seconds of a handheld trajectory in the validation split. 
+In this work, we used 71 trajectories in total, matching the trajectory count used by the TinyODOM reference implementation [CITE, TinyODOM code]. We partition these into 50 training trajectories, 14 validation trajectories and 7 test trajectories which is approximately a 70/20/10 split. This differs from TinyODOM which used a 85/5/10 split [CITE, TinyODOM]. Our motivation for using a larger validation split in TinyODOM-EX is that we explicitly train against validation loss during the NAS while the TinyODOM reference implementation trains with `model.fit` on the training data only (checkpointing on training loss) and then evaluates on the validation set after training. Whereas TinyODOM-EX passes the validation data into `model.fit`, checkpoints on the validation loss and applies early stopping during the neural architecture search based on the validation loss [CITE, TinyODOM code]. Figure Y illustrates the first 120 seconds of a handheld trajectory in the validation split. 
 
 #### **3.2.2 Data Processing**
 
@@ -297,7 +302,7 @@ Similar to TinyODOM, the window size for these studies was 200 samples [CITE, Ti
 
 ### **3.3 NAS Objective, Search Space, and Training Procedure**
 
-This report uses the same terminology for experimentation as Optuna. A "study" refers to a full Optuna run with an objective, and a trial refers to one architecture and its resulting training, validation and hardware measurements [CITE, Optuna]. TinyODOM-EX supports both single-objective (optimization with a scoring function) and multi-objective studies, with the configuration file controlling which type is run and whether energy is included in the optimization. 
+This report uses the same terminology for experimentation as Optuna. A "study" refers to a full Optuna run with an objective, and a trial refers to one architecture and its resulting training, validation and hardware measurements [CITE, Optuna trial]. TinyODOM-EX supports both single-objective (optimization with a scoring function) and multi-objective studies, with the configuration file controlling which type is run and whether energy is included in the optimization. 
 
 TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution network that maps the windowed inertial inputs to velocity (x and y) outputs. The search space is derived from the TinyODOM TCN design, while extending evaluation to incorporate hardware-grounded constraints *and* measured energy [CITE, TinyODOM]. Across the full set of sampled hyperparemeters (detailed in Table X) for TinyODOM-EX, the search space spans approximately 8 million candidate combinations. 
 
@@ -307,76 +312,81 @@ TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution netwo
   </figcaption>
 </figure>
 
-| Hyperparameter       | Range                     | What it does                                             |
-| -------------------- | ------------------------- | -------------------------------------------------------- |
-| nb_filters           | 2 to 63                   | Controls model width / capacity                          |
-| kernel_size          | 2 to 15                   | Temporal receptive field per layer                       |
-| dropout_rate         | 0 to 1                    | Regularization                                           |
-| use_skip_connections | T/F                       | Residual or plain blocks                                 |
-| norm_flag            | T/F                       | Normalization                                            |
-| dilations            | Categorical (465 options) | Pattern of dilation across layers (e.g., [1, 4, 16, 32]) |
+| Hyperparameter       | Range                          | What it does                                             |
+| -------------------- | ------------------------------ | -------------------------------------------------------- |
+| nb_filters           | 2 to 63                        | Controls model width / capacity                          |
+| kernel_size          | 2 to 15                        | Temporal receptive field per layer                       |
+| dropout_rate         | 0 to 1 (discretized every 0.2) | Regularization                                           |
+| use_skip_connections | T/F                            | Residual or plain blocks                                 |
+| norm_flag            | T/F                            | Normalization                                            |
+| dilations            | Categorical (465 options)      | Pattern of dilation across layers (e.g., [1, 4, 16, 32]) |
 
 The hyperparemeters in Table X jointly influence not only the accuracy of the model (RMSE), but also the feasibility of deployment to the target due to the flash/RAM constraints.
 
 #### **3.3.1 Objective Functions**
-For single objective studies, TinyODOM-EX uses a score function that combines the validation accuracy, memory usage, latency and energy per inference (see Eq. 1). Accuracy is computed from the validation RMSE on the predicted velocity components. Memory terms are computed from the reported flash and RAM usage (returned by the HIL pipeline). Even though latency was included as a metric in TinyODOM, we chose to change how the penalty was calculated. In TinyODOM, the latency penalty was a scalar multiplied by the latency in milliseconds [CITE, TinyODOM code]. We found that this was challenging to tune and decided to instead compare the latency to the real-time budget and only apply the latency penalty when the measured latency exceeded the budget. The budget is derived based on the sampling rate and stride length. We also decided to clamp that penalty to a maximum of 2 in order to keep the scores reasonable. When energy is enabled (based on the config), the score penalizes candidates whose measured energy exceed a target. In our experiments, we chose to use 50mW as our target. Note, that unlike the latency penalty, the energy penalty could actually be a bonus if the power was less than the target.
+For single objective studies, TinyODOM-EX uses a score function that combines the validation accuracy, memory usage, latency and energy per inference (see Eq. 1). Accuracy is computed from the validation RMSE on the predicted velocity components. Memory terms are computed from the reported flash and RAM usage (returned by the HIL pipeline). Even though latency was included as a metric in TinyODOM, we chose to change how the penalty was calculated. In TinyODOM, the latency penalty was a scalar multiplied by the latency in milliseconds [CITE, TinyODOM code]. We found that this was challenging to tune and decided to instead compare the latency to the real-time budget and only apply the latency penalty when the measured latency exceeded the budget. The budget is derived based on the sampling rate and stride length. We also decided to clamp that penalty to a maximum of 2 in order to keep the scores reasonable (see Eq. 2). When energy is enabled (based on the config), the score penalizes candidates whose measured energy exceed a target. In our experiments, we chose to use 10 mJ as our target. Note, that unlike the latency penalty, the energy penalty could actually be a bonus if the power was less than the target.
 
 
 <figure style="text-align: left">
   <img src="./assets/img/TinyODOM_score.png"
        alt="Score = Accuracy + memory term + latency penalty + energy term"
-       width="700" />
+       width="700"
+       style="display:block; margin:0 auto;"/>
   <img src="./assets/img/TinyODOM_latency_penalty.png"
        alt="Score = Accuracy + memory term + latency penalty + energy term"
-       width="650" />
+       width="650" 
+       style="display:block; margin:0 auto;"/>
 </figure>
-<!-- ```math
-\text{score} = \underbrace{\text{Accuracy}}_{\displaystyle -(\mathrm{RMSE}_{v_x} + \mathrm{RMSE}_{v_y})} \;+\; \underbrace{\text{MemoryTerm}}_{\displaystyle 0.01\!\left(\frac{\mathrm{RAM}}{\mathrm{maxRAM}} + \frac{\mathrm{Flash}}{\mathrm{maxFlash}}\right)} \;-\; \underbrace{\text{LatencyPenalty}}_{\displaystyle \text{latency violation}} \;-\; \underbrace{\text{EnergyPenalty}}_{\displaystyle 0.15\,(E_{\text{meas}} - E_{\text{target}})}.
-``` -->
 
-
-$$
-\text{score}
-=
--(\mathrm{RMSE}_{v_x} + \mathrm{RMSE}_{v_y})
-+
-0.01\left(\frac{\mathrm{RAM}}{\mathrm{maxRAM}} + \frac{\mathrm{Flash}}{\mathrm{maxFlash}}\right)
--
-\mathrm{LatencyPenalty}
--
-0.15\,(E_{\text{meas}} - E_{\text{target}}).
-$$
-
-
-```math
-\mathrm{LatencyPenalty} = \begin{cases} 0, & \text{if } \mathrm{latency}_{\mathrm{ms}} \le \mathrm{latencyBudget}_{\mathrm{ms}}, \\[6pt] \min\!\left( 2,\; \dfrac{\mathrm{latency}_{\mathrm{ms}} - \mathrm{latencyBudget}_{\mathrm{ms}}} {\mathrm{latencyBudget}_{\mathrm{ms}}} \right), & \text{if } \mathrm{latency}_{\mathrm{ms}} > \mathrm{latencyBudget}_{\mathrm{ms}}. \end{cases} 
-```
-
-- Temporal convolutional network search space
-  - depth, kernel sizes, dilation pattern, channel counts, residual connections, and heads that predict velocity components
-- Objective design
-  - construct a scalar Optuna objective from validation errors plus latency and memory, and extend it to include energy either as a penalty term or as part of a multi objective front
-  - Note the addition of seeding with default configuration after score function, not energy aware study
-- Training procedure
-  - loss terms and optimization settings, number of epochs per trial, early stopping and Optuna pruning strategy, and how failed HIL calls or invalid models are marked and handled inside the NAS loop
+#### **3.3.2 Training and Pruning***
+To get the accuracy metric, each trial trains for a minimum of 40 epochs and a maximum of 50 epochs (based on an early stopping system). The early stopping is based on the validation loss. Additionally, to keep studies accurate, Optuna can prune trials early. For our studies, this only happened when the arena was exhausted, however, if there was a different error code thrown, it would also have pruned the trial. This is different from TinyODOM's Mango optimizer. TinyODOM set models that wouldn't work to -5 (a number more negative than their typical scores) [CITE, TinyODOM]. For multi-objective studies, Optuna does not support pruning, so the objectives under test were given large constants and the trials were removed upon completion. 
 
 ### **3.4 Hardware in the Loop Measurement and Implementation**
-- Hardware setup
-  - Arduino Nano 33 BLE Sense and INA228 power monitor, physical wiring and USB power path, measurement setup used to obtain current, voltage, and energy per inference on BLE33
-- Firmware harness
-  - evolution from the original Mbed latency harness to Arduino sketches with consistent TFLite Micro setup and telemetry
-  - separate energy instrumented and latency only firmware variants to balance measurement richness with tensor arena limits
-- Software stack for HIL
-  - Python 3.11, TensorFlow 2 and TFLite Micro, Arduino CLI tooling, ZeroMQ based RPC between NAS client and HIL server, and debugging tools used during BLE33 and RP2040 bring up
+<figure style="text-align: left">
+  <img src="./assets/img/TinyODOM-EX_HIL.png"
+       alt="Hardware in the loop"
+       width="600" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong>  Physical HIL setup for TinyODOM-EX. The Arduino Nano 33 BLE Sense is powered through an inline Adafruit INA228 breakout, enabling external energy measurement during inference. The DUT also configures and reads the INA228 over I2C. Telemetry is returned to the host over USB serial.
+  </figcaption>
+</figure>
+As shown in Figure X, TinyODOM-EX instruments energy by inserting an Adafruit INA228 power monitor inline with the DUT supply rail. The USB supply for the HIL computer is routed into the INA228 V<sub>in</sub>+ terminal, and the DUT is powered from the INA228 V<sub>in</sub>- terminal so that the on-board 15 mΩ shunt is in series with the DUT [CITE, Adafruit]. This configuration allows the system to report energy per inference based on the accumulated, directly measured energy instead of relying solely on proxy metrics such as FLOPs. 
+
+A deliberate simplification in TinyODOM-EX is that the DUT configures and reads the INA228 over I2C instead of delegating that to a second "harness" MCU. This reduces coordination complexity. However, this means that the reported energy overhead includes the INA228. According to the INA228's datasheet, the supply current is approximately 0.64 mA, which corresponds to about 2.1 mW power draw at its 3.3 V logic rail [CITE, TI INA228].
+
+TinyODOM-EX uses a TensorFlow Lite Micro inference harness to benchmark the candidate models on the Arduino Nano 33 BLE Sense. The harness initializes the TFLM interpreter, allocates the fixed arena, loads the candidate models and runs repeated inferences on a set of input windows. To reduce the influence of setup and measurement jitter, inference is run 10 times and the energy and latency is averaged per inference. 
+
+Finally, to support both energy-aware and latency-only studies without manual code edits, TinyODOM-EX maintains two Arduino sketches:
+1. `tinyodom_tcn_energy.ino`, which enables the INA228-based energy measurement and reports energy, power, current, voltage and latency.
+2. `tinyodom_tcn_no_energy.ino`, which omits the INA228/I2C setup and reports just latency.
+
+This split is because the INA228/I2C libraries take up memory headroom on the board. The HIL server selects the appropriate sketch at runtime based on the YAML configuration and copies it into the build directory.
+
+After execution, the sketch prints the telemetry over serial. The HIL computer parses this output using regex and returns the parsed metrics to the NAS client for incorporation into the study (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details).
+
 
 ### **3.5 Key Design Decisions and Tradeoffs**
-- Choosing Optuna over Mango and other tuners
-  - support for multi objective search, pruning, and tight integration with Python based experiments
-- Separating firmware into energy instrumented and latency only sketches
-  - tradeoff between richer measurements and available tensor arena space on BLE33 and impact on maximum model size
-- Dropping RP2040 from final experiments
-  - operational reliability problems and the need for fully unattended NAS runs outweighed the benefit of a second DUT, so final results focus on BLE33 while still documenting the RP2040 failure mode and possible future mitigations
-  - left time for multi-objective NAS runs
+As TinyODOM-EX evolved from the original TinyODOM reference workflow into an end-to-end hardware-aware NAS system, the primary challenges shifted from model design to system integration and experimental reliability. In particular, maintaining reproducible studies and debuggable code while repeatedly converting, compiling, flashing, and measuring candidate models required several architectural and tooling choices. The remainder of this section documents the key decisions and the tradeoffs they introduced.
+
+#### **3.5.1 Optuna-based NAS instead of Mango**
+TinyODOM used Mango as its tuner, but TinyODOM-EX is built around Optuna instead because it better matched the project's needs once the hardware-in-the-loop constraints and need for multi-objective studies were introduced. Mango is explicitly positioned as a Python library for parallel hyperparameter tuning based on Bayesian optimization, with emphasis on abstraction, flexibility and fault-tolerant execution. Those are strong properties for scaling optimization, and they generally align with the needs of a NAS-style workflow [CITE, Mango].
+
+However, TinyODOM-EX required two capabilities that were central: a path to multi-objective search in order to create Pareto Frontiers and practical mechanisms to terminate infeasible trials to reduce experiment time.
+Optuna provided both single-objective Bayesian optimization via TPE sampling, and a multi-objective mode using an NSGA-II sampler, both of which are used by TinyODOM-EX [CITE, Optuna TPE] [CITE, Optuna NSGAii]. Additionally, Optuna has built out a library of visualization and storage/logging functions. In fact, Figure ZZZ in [Section 4.5.2](#452-energy-oriented-hyperparameter-structure) was created using Optuna's visualization utilities.
+
+#### **3.5.2 Separate Energy-instrumented and Latency-Only Firmware**
+TinyODOM-EX maintains two Arduino measurement sketches as described in [Section 3.4](#34-hardware-in-the-loop-measurement-and-implementation) above. The motivation is a direct resource tradeoff on the microcontroller. The INA228's measurement support (I2C libraries and device drivers) increases the flash and RAM usage, which can reduce the maximum feasible model size. To avoid artifically constraining the search space in studies when energy is not being optimized, the latency-only sketch omits the INA228 setup and only reports timing. In the future, if a second harness board runs the DUT, this will no longer be an issue.
+
+#### **3.5.3 Dropping the Arduino Nano RP2040 Target From Final Studies**
+TinyODOM-EX initially targeted using multiple boards, but the final set of experiments focus solely on the Arduino Nano 33 BLE Sense because the RP2040 path did not meet the reliability requirement for an unattended NAS study.  Under repeated compile-flash-measure cycles, the RP2040 required manual intervention (needing the program button pushed to re-enter the bootloader state), which was infeasible for long running studies. In fact, in our setup, the board was only ever able to be programmed once before needing to be reset manually. 
+
+There was a practical tradeoff here: excluding the RP2040 meant that there was no comparison of hardware in the final results. However, the benefit is that by avoiding needing to run single-objective scoring studies with the RP2040, there was time to run additional multi-objective studies which yielded great results (as described in the next section).
+
+A plausible mitigation for a future RP2040-based NAS run is to automate the recovery. We found community documentation from others in the community that also struggled with this on the RP2040 and they recommend using a secondary RP2040 (or other MCU) as a debug probe and controlling the reset behavior via the RUN pin to recover from hard faults without human interaction. Using a Pico as a probe is documented and widely used (often referred to as a "Picoprobe"), and the RUN pin can be used to reset the RP2040 by pulling it low [CITE, Picoprobe] [CITE, RUN pin]
+
+#### **3.5.4 Modular Refactor and YAML Configuration**
+Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow into a NAS client, HIL server, utility functions across multiple files and a centralized YAML configuration was a deliberate design choice to improve reproducibility and operational reliability. The YAML file allows the study to be self-describing, and studies can easily be analyzed without worrying that hardcoded parameters had changed between runs. Additionally, by moving into individual python files, it allowed for unit tests to be written and bugs to be caught using those prior to expensive mistakes mid-study. The downside of this approach was higher upfront cost and a more complex code layout than a single script. This new modular system means that in the future, a new compile and upload chain could be used to bring a new board from a different manufacturer without needing to change the entirety of the code.
 
 ---
 
@@ -388,7 +398,6 @@ $$
 - Analyze multi-objective fronts for accuracy–latency and accuracy–energy
 - Quantify NAS convergence and trial budget sufficiency
 
----
 
 ### **4.1 Experimental Studies and Metrics**
 
@@ -404,7 +413,6 @@ $$
 - Pointer back to Section 3 for experimental setup
   - HIL infrastructure, number of trials, key hyperparameters
 
----
 
 ### **4.2 Reproducing TinyODOM on BLE33 (Study 1)**
 
@@ -433,17 +441,9 @@ $$
   - Use this as a reference point for later energy-aware and multi-objective models
 
 
----
-
 ### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 1 and 2)**
 
-The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term $\(A = -(R_x + R_y)\)$, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. The overall score is
-
-$$\text{score} = A + 0.01 \, M - \text{lat\_pen} - \text{energy\_pen} $$
-
-** NOTE TO SELF: MAYBE ALREADY DISCUSSED EARLIER AND IF SO, DELETE HERE AND JUST REFERENCE
-
-where the energy penalty is active only in the energy-aware run. Higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
+The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. See [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details on the score function. Note that higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
 
 #### **4.3.1 Effect of Energy Logging on NAS Outcome**
 
@@ -462,9 +462,9 @@ where the energy penalty is active only in the energy-aware run. Higher scores c
 | `resource_term` | 0.7                 | 0.4                    |
 
 
-Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: $$model\_acc$$ accounts for about 77% of the absolute score, $$latency\_term$$ contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of $$model\_acc$$ drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
+Table X compares how the scalar score is distributed across components in the no-energy and energy-aware single-objective runs on BLE33. In the no-energy setting, the score is dominated by the accuracy term: the model accuracy term accounts for about 77% of the absolute score, the latency penalty contributes roughly 22%, and the resource term is negligible. When energy measurements are enabled, the energy penalty becomes a first-class objective and takes about 35% of the score magnitude. The share of model accuracy term drops to roughly 55% and the latency contribution falls below 10%, while the resource term remains insignificant.
 
-The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
+The mean model accuracy value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
 
 
 - Contrast Study 1 (no energy logging) vs Study 2 (energy logging added to score)
@@ -487,7 +487,6 @@ The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware
   - When latency is a good proxy for energy and where it breaks down
   - Outlier models that are faster but not proportionally more energy efficient
 
----
 
 ### **4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**
 
@@ -503,7 +502,7 @@ The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware
   </figcaption>
 </figure>
 
-Figure X shows the tradeoff between aggregate RMSE over $v_x$ and $v_y$ and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the non-dominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
+Figure X shows the tradeoff between aggregate RMSE over v<sub>x</sub> and v<sub>y</sub> and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the non-dominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
 
 The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. In practice, this creates a clear knee in the accuracy–latency curve just before the real-time boundary where small movements past this region increase latency noticeably while improving error only slightly. Such knees on a Pareto front are often used as preferred compromise points in multi-objective decision making [CITE, Branke]. Through this Pareto front plot, we can see that if we had kept the update rate at 10 Hz (100ms real time budget), the accuracy would have been much worse (~2x difference). See  [Section 3.2](#32-dataset-and-windowing-pipeline) for details on the change from 100 ms update rate to 200 ms update rate.
 
@@ -566,7 +565,7 @@ Figure X shows that for the energy aware multi objective study, `nb_filters` are
        width="450"
        style="display:block; margin:0 auto;" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
-    <strong>Figure Z.</strong> Optuna-created hyperparameter importance for the accuracy–energy multi-objective NAS run on the BLE33. Bars show the relative contribution of each hyperparameter to variation in the two objectives (aggregate RMSE and energy per inference). nb_filters dominates both objectives, while kernel_size has moderate influence and the remaining knobs contribute little.
+    <strong>Figure ZZZ.</strong> Optuna-created hyperparameter importance for the accuracy–energy multi-objective NAS run on the BLE33. Bars show the relative contribution of each hyperparameter to variation in the two objectives (aggregate RMSE and energy per inference). nb_filters dominates both objectives, while kernel_size has moderate influence and the remaining knobs contribute little.
   </figcaption>
 </figure>
 
@@ -651,7 +650,6 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Observation of clear accuracy–latency–energy tradeoffs and identification of nb_filters as the dominant hyperparameter.
 - High-level statement of what the results collectively show about energy-aware NAS on microcontrollers.
 
----
 
 ### **5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**
 
@@ -677,7 +675,6 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Enforcing flash/RAM feasibility inside the HIL loop ensures that all reported models are deployable on BLE33 by construction.
   - Optimization histories and hypervolume curves indicate approximate saturation points, providing empirical guidance on how many trials are needed before returns diminish.
 
----
 
 ### **5.3 Limitations and Threats to Validity**
 
@@ -697,7 +694,6 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Energy measurements are taken at the board level under a specific harness, supply path, and workload.
   - Different clocking schemes, peripheral usage, or deployment scenarios may shift absolute latency and energy values.
 
----
 
 ### **5.4 Future Work**
 
@@ -717,8 +713,9 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
 - Toward real deployments
   - Integrate NAS-selected models into end-to-end systems (such as small robots or wearables) to evaluate navigation performance beyond offline OxIOD metrics.
   - Revisit RP2040-class boards with an external debug/reset controller or similar recovery mechanism to enable reliable multi-device NAS.
+  
+A natural extension of this design is a two-board measurement configuration where a dedicated harness MCU manages power instrumentation and the DUT runs inference with minimal measurement overhead. This would better isolate DUT-only energy but increases hardware and software complexity and introduces additional failure modes for unattended NAS runs. TinyODOM-EX prioritizes robustness and repeatability, so the single-board instrumentation approach is used for all results reported here.
 
----
 
 ### **5.5 Final Conclusion**
 
