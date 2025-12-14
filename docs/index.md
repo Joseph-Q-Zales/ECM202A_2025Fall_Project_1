@@ -229,7 +229,7 @@ This section describes the end-to-end TinyODOM-EX technical approach for hardwar
 
 ### **3.1 TinyODOM-EX System Architecture**
 <figure style="text-align: left">
-  <img src="./ssets/img/TinyODOM-EX_no_details_block_diagram_V2.png"
+  <img src="./assets/img/TinyODOM-EX_no_details_block_diagram_V2.png"
        alt="TinyODOM-EX device level block diagram"
        width="600" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
@@ -241,7 +241,7 @@ TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular 
 
 #### **3.1.1 Per-trial Workflow**
 <figure style="text-align: left">
-  <img src="./ssets/img/TinyODOM-EX_no_details_block_diagram.png"
+  <img src="./assets/img/TinyODOM-EX_blockdiagram.png"
        alt="TinyODOM-EX system block diagram"
        width="600" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
@@ -270,7 +270,7 @@ Similar to TinyODOM, this project uses the Oxford Inertial Odometry Dataset (OxI
 #### **3.2.1 Data Split**
 
 <figure style="text-align: left">
-  <img src="docs/assets/plots/handheld_data4_raw_vi4_120seconds_10x.gif"
+  <img src="./assets/plots/handheld_data4_raw_vi4_120seconds_10x.gif"
        alt="Trajectory example"
        width="450" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
