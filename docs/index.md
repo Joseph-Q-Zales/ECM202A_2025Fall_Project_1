@@ -321,20 +321,18 @@ The hyperparemeters in Table X jointly influence not only the accuracy of the mo
 #### **3.3.1 Objective Functions**
 For single objective studies, TinyODOM-EX uses a score function that combines the validation accuracy, memory usage, latency and energy per inference (see Eq. 1). Accuracy is computed from the validation RMSE on the predicted velocity components. Memory terms are computed from the reported flash and RAM usage (returned by the HIL pipeline). Even though latency was included as a metric in TinyODOM, we chose to change how the penalty was calculated. In TinyODOM, the latency penalty was a scalar multiplied by the latency in milliseconds [CITE, TinyODOM code]. We found that this was challenging to tune and decided to instead compare the latency to the real-time budget and only apply the latency penalty when the measured latency exceeded the budget. The budget is derived based on the sampling rate and stride length. We also decided to clamp that penalty to a maximum of 2 in order to keep the scores reasonable. When energy is enabled (based on the config), the score penalizes candidates whose measured energy exceed a target. In our experiments, we chose to use 50mW as our target. Note, that unlike the latency penalty, the energy penalty could actually be a bonus if the power was less than the target.
 
+
+<figure style="text-align: left">
+  <img src="./assets/img/TinyODOM_score.png"
+       alt="Score = Accuracy + memory term + latency penalty + energy term"
+       width="700" />
+  <img src="./assets/img/TinyODOM_latency_penalty.png"
+       alt="Score = Accuracy + memory term + latency penalty + energy term"
+       width="650" />
+</figure>
 <!-- ```math
 \text{score} = \underbrace{\text{Accuracy}}_{\displaystyle -(\mathrm{RMSE}_{v_x} + \mathrm{RMSE}_{v_y})} \;+\; \underbrace{\text{MemoryTerm}}_{\displaystyle 0.01\!\left(\frac{\mathrm{RAM}}{\mathrm{maxRAM}} + \frac{\mathrm{Flash}}{\mathrm{maxFlash}}\right)} \;-\; \underbrace{\text{LatencyPenalty}}_{\displaystyle \text{latency violation}} \;-\; \underbrace{\text{EnergyPenalty}}_{\displaystyle 0.15\,(E_{\text{meas}} - E_{\text{target}})}.
 ``` -->
-
-<div>
-\[
-\mathrm{LatencyPenalty} =
-\begin{cases}
-0, & \text{if } \mathrm{latency}_{\mathrm{ms}} \le \mathrm{latencyBudget}_{\mathrm{ms}}, \\
-\min\!\left(2,\frac{\mathrm{latency}_{\mathrm{ms}}-\mathrm{latencyBudget}_{\mathrm{ms}}}{\mathrm{latencyBudget}_{\mathrm{ms}}}\right),
-& \text{if } \mathrm{latency}_{\mathrm{ms}} > \mathrm{latencyBudget}_{\mathrm{ms}}.
-\end{cases}
-\]
-</div>
 
 
 $$
