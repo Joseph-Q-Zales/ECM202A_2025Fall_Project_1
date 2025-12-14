@@ -325,6 +325,18 @@ For single objective studies, TinyODOM-EX uses a score function that combines th
 \text{score} = \underbrace{\text{Accuracy}}_{\displaystyle -(\mathrm{RMSE}_{v_x} + \mathrm{RMSE}_{v_y})} \;+\; \underbrace{\text{MemoryTerm}}_{\displaystyle 0.01\!\left(\frac{\mathrm{RAM}}{\mathrm{maxRAM}} + \frac{\mathrm{Flash}}{\mathrm{maxFlash}}\right)} \;-\; \underbrace{\text{LatencyPenalty}}_{\displaystyle \text{latency violation}} \;-\; \underbrace{\text{EnergyPenalty}}_{\displaystyle 0.15\,(E_{\text{meas}} - E_{\text{target}})}.
 ``` -->
 
+<div>
+\[
+\mathrm{LatencyPenalty} =
+\begin{cases}
+0, & \text{if } \mathrm{latency}_{\mathrm{ms}} \le \mathrm{latencyBudget}_{\mathrm{ms}}, \\
+\min\!\left(2,\frac{\mathrm{latency}_{\mathrm{ms}}-\mathrm{latencyBudget}_{\mathrm{ms}}}{\mathrm{latencyBudget}_{\mathrm{ms}}}\right),
+& \text{if } \mathrm{latency}_{\mathrm{ms}} > \mathrm{latencyBudget}_{\mathrm{ms}}.
+\end{cases}
+\]
+</div>
+
+
 $$
 \text{score}
 =
