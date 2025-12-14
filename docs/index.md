@@ -107,62 +107,15 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 # Table of Contents:
 - [Table of Contents:](#table-of-contents)
 - [**1. Introduction**](#1-introduction)
-    - [**1.1 Motivation \& Objective**](#11-motivation--objective)
-    - [**1.2 State of the Art \& Its Limitations**](#12-state-of-the-art--its-limitations)
-    - [**1.3 Novelty \& Rationale**](#13-novelty--rationale)
-    - [**1.4 Potential Impact**](#14-potential-impact)
-    - [**1.5 Challenges**](#15-challenges)
-    - [**1.6 Metrics of Success**](#16-metrics-of-success)
 - [**2. Related Work**](#2-related-work)
 - [**3. Technical Approach**](#3-technical-approach)
-    - [**3.1 TinyODOM-EX System Architecture**](#31-tinyodom-ex-system-architecture)
-      - [**3.1.1 Per-trial Workflow**](#311-per-trial-workflow)
-      - [**3.1.2 Configuration**](#312-configuration)
-    - [**3.2 Dataset and Windowing Pipeline**](#32-dataset-and-windowing-pipeline)
-      - [**3.2.1 Data Split**](#321-data-split)
-      - [**3.2.2 Data Processing**](#322-data-processing)
-    - [**3.3 NAS Objective, Search Space, and Training Procedure**](#33-nas-objective-search-space-and-training-procedure)
-      - [**3.3.1 Objective Functions**](#331-objective-functions)
-      - [**3.3.2 Training and Pruning**\*](#332-training-and-pruning)
-    - [**3.4 Hardware in the Loop Measurement and Implementation**](#34-hardware-in-the-loop-measurement-and-implementation)
-    - [**3.5 Key Design Decisions and Tradeoffs**](#35-key-design-decisions-and-tradeoffs)
-      - [**3.5.1 Optuna-based NAS instead of Mango**](#351-optuna-based-nas-instead-of-mango)
-      - [**3.5.2 Separate Energy-instrumented and Latency-Only Firmware**](#352-separate-energy-instrumented-and-latency-only-firmware)
-      - [**3.5.3 Dropping the Arduino Nano RP2040 Target From Final Studies**](#353-dropping-the-arduino-nano-rp2040-target-from-final-studies)
-      - [**3.5.4 Modular Refactor and YAML Configuration**](#354-modular-refactor-and-yaml-configuration)
 - [**4. Evaluation \& Results**](#4-evaluation--results)
-    - [**4.1 Experimental Studies and Metrics**](#41-experimental-studies-and-metrics)
-    - [**4.2 Reproducing TinyODOM on BLE33 (Study 1)**](#42-reproducing-tinyodom-on-ble33-study-1)
-      - [**4.2.1 Baseline Model Quality**](#421-baseline-model-quality)
-      - [**4.2.2 Baseline Latency and Model Size Profile**](#422-baseline-latency-and-model-size-profile)
-    - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 1 and 2)**](#43-single-objective-energy-aware-nas-on-ble33-studies-1-and-2)
-      - [**4.3.1 Effect of Energy Logging on NAS Outcome**](#431-effect-of-energy-logging-on-nas-outcome)
-      - [**4.3.2 Empirical Relationship Between Energy and Latency**](#432-empirical-relationship-between-energy-and-latency)
-    - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
-      - [**4.4.1 Pareto Front and Convergence**](#441-pareto-front-and-convergence)
-    - [**4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**](#442-hyperparameter-sensitivity-for-latency-oriented-search)
-    - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
-      - [**4.5.1 Pareto Front in Accuracy–Energy Space**](#451-pareto-front-in-accuracyenergy-space)
-    - [**4.5.2 Energy-Oriented Hyperparameter Structure**](#452-energy-oriented-hyperparameter-structure)
-    - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
-      - [**4.6.1 Summary of Best Models Across Studies**](#461-summary-of-best-models-across-studies)
-      - [**4.6.2 NAS Trial Budget and Practical Convergence**](#462-nas-trial-budget-and-practical-convergence)
-    - [**4.x Multi-Objective NAS**](#4x-multi-objective-nas)
-    - [**4.x NAS Trial Budget**](#4x-nas-trial-budget)
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
-    - [**5.1 Summary of Key Findings**](#51-summary-of-key-findings)
-    - [**5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**](#52-lessons-from-energy-aware-nas-and-hil-infrastructure)
-    - [**5.3 Limitations and Threats to Validity**](#53-limitations-and-threats-to-validity)
-    - [**5.4 Future Work**](#54-future-work)
-    - [**5.5 Final Conclusion**](#55-final-conclusion)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
-    - [**7.1. Datasets**](#71-datasets)
-    - [**7.2. Software**](#72-software)
 - [🧭 **Guidelines for a Strong Project Website**](#-guidelines-for-a-strong-project-website)
 - [📊 **Minimum vs. Excellent Rubric**](#-minimum-vs-excellent-rubric)
 - [Project Abstract](#project-abstract)
-    - [Project Video](#project-video)
 - [Project Motivation](#project-motivation)
 - [System Block Diagram](#system-block-diagram)
 
@@ -206,19 +159,17 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - Offer a concrete reference for structuring energy aware TinyML experiments, including how to couple Optuna, TFLite Micro, and Arduino CLI in a way that survives toolchain changes
 
 ### **1.5 Challenges**  
-- RP2040 board instability under heavy flashing
-  - repeated hard faults and failure to re enter BOOTSEL mode, blocking unattended NAS runs
-  - A possible mitigation for *future* RP2040-based NAS runs is to attach a second microcontroller (e.g. a Pico running Picoprobe) configured to pull the target’s RUN pin low (i.e. reset) or to drive SWD reset, allowing automated recovery when the board fails to re-enter BOOTSEL after a hard fault [RUN-pin reset docs](https://forums.raspberrypi.com/viewtopic.php?t=340911), [Pico-as-debug-probe workflow](https://raspberry-projects.com/pi/microcontrollers/programming-debugging-devices/debugging-using-another-pico)
-- Modernizing the entire software stack while keeping parity with TinyODOM
-  - Python and TensorFlow upgrades, TFLite Micro integration, Arduino CLI setup, and new firmware harnesses that all have to agree on formats and interfaces
-- Debugging across GPU and HIL processes
-  - tracing failures that only show up on device during NAS runs, correlating ZeroMQ logs, serial output, and Optuna trial state
+While TinyODOM-EX’s technical goal is straightforward, implementing an end-to-end hardware-aware NAS loop exposed several practical challenges in system integration and experimental reliability. First, early experiments included the Arduino Nano RP2040 as a target. However, under repeated uploads cycles, it would fail to re-enter the bootloader mode (BOOTSEL) without manual intervention, preventing it from being used unattended. As a result, the final studies focus on the Arduino Nano 33 BLE Sense, with RP2040's limitations documented as a negative result and a driver for future design choices (see [Section 3.5.3](#353-dropping-the-arduino-nano-rp2040-target-from-final-studies) for details and a plausible fix).
+
+Second, TinyODOM-EX required modernizing a large portion of the software and and toolchain while trying to maintain the same behavior as the previous work, TinyODOM [CITE, TinyODOM]. This included upgrading the Python and TensorFlow stacks and adopting the Arduino CLI toolchain (see [Section 3](#3-technical-approach) for details). Ensuring consistency quickly became non-trivial as the amount of code needing to change grew rapidly. Due to these changes, unit test were created to help deal with some of the more finicky changes. 
+
+Third, debugging became inherently cross-layered and often took place across both the GPU server and the HIL machine. Many unexpected failures only appeared in the middle of long NAS runs, where the study state had to be compared with the program logs, Arduino CLI build output and telemetry from the device. This motivated more structured logging and explicit error handling so that failures could be diagnosed quickly
 
 ### **1.6 Metrics of Success** 
-The goal of this project is to create a  
-- Quantitative: accuracy metrics from OxIOD (RMSE, trajectory error), latency per inference on BLE33, memory footprint, and energy per inference
-- System level: stable unattended HIL runs over many NAS trials without manual intervention or board recovery
-- Scientific: clear visualization of tradeoffs between accuracy, latency, memory, and energy, plus comparison to TinyODOM style baselines
+We evaluate TinyODOM-EX using three criteria for success: quantitative model performance, system-level robustness and the clarity of the resulting design tradeoffs.
+- *Quantitative metrics*: Model accuracy on the OxIOD dataset using the velocity RMSE, along with embedded deployment metrics like latency per inference, energy per inference and memory footprint (flash/RAM) on the Arduino 33 BLE Sense [CITE, OxIOD]
+- *System-level robustness*: Stable unattended HIL runs across many NAS trials without manual intervention or board recovery
+- *Result clarity*: clear visualization of the accuracy-memory-latency-energy tradeoffs (including Pareto Fronts)
 
 ---
 
@@ -330,11 +281,11 @@ For single objective studies, TinyODOM-EX uses a score function that combines th
 <figure style="text-align: left">
   <img src="./assets/img/TinyODOM_score.png"
        alt="Score = Accuracy + memory term + latency penalty + energy term"
-       width="700"
+       width="750"
        style="display:block; margin:0 auto;"/>
   <img src="./assets/img/TinyODOM_latency_penalty.png"
        alt="Score = Accuracy + memory term + latency penalty + energy term"
-       width="650" 
+       width="700" 
        style="display:block; margin:0 auto;"/>
 </figure>
 
@@ -345,7 +296,7 @@ To get the accuracy metric, each trial trains for a minimum of 40 epochs and a m
 <figure style="text-align: left">
   <img src="./assets/img/TinyODOM-EX_HIL.png"
        alt="Hardware in the loop"
-       width="600" 
+       width="450" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.</strong>  Physical HIL setup for TinyODOM-EX. The Arduino Nano 33 BLE Sense is powered through an inline Adafruit INA228 breakout, enabling external energy measurement during inference. The DUT also configures and reads the INA228 over I2C. Telemetry is returned to the host over USB serial.
