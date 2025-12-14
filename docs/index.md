@@ -229,7 +229,7 @@ This section describes the end-to-end TinyODOM-EX technical approach for hardwar
 
 ### **3.1 TinyODOM-EX System Architecture**
 <figure style="text-align: left">
-  <img src="./assets/img/TinyODOM-EX_no_details_block_diagram_V2.png"
+  <img src="./assets/img/TinyODOM-EX_no_details_block_diagram_v2.png"
        alt="TinyODOM-EX device level block diagram"
        width="600" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
