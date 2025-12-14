@@ -123,7 +123,7 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - [**4. Evaluation \& Results**](#4-evaluation--results)
     - [**4.1 Experimental Studies and Metrics**](#41-experimental-studies-and-metrics)
     - [**4.2 Reproducing TinyODOM on BLE33 (Study 1)**](#42-reproducing-tinyodom-on-ble33-study-1)
-    - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 2)**](#43-single-objective-energy-aware-nas-on-ble33-studies-2)
+    - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Study 2)**](#43-single-objective-energy-aware-nas-on-ble33-study-2)
     - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
     - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
     - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
@@ -329,7 +329,18 @@ To get the accuracy metric, each trial trains for a minimum of 40 epochs and a m
     <strong>Figure X.</strong>  Physical HIL setup for TinyODOM-EX. The Arduino Nano 33 BLE Sense is powered through an inline Adafruit INA228 breakout, enabling external energy measurement during inference. The DUT also configures and reads the INA228 over I2C. Telemetry is returned to the host over USB serial.
   </figcaption>
 </figure>
-As shown in Figure X, TinyODOM-EX instruments energy by inserting an Adafruit INA228 power monitor inline with the DUT supply rail. The USB supply for the HIL computer is routed into the INA228 V<sub>in</sub>+ terminal, and the DUT is powered from the INA228 V<sub>in</sub>- terminal so that the on-board 15 mΩ shunt is in series with the DUT [CITE, Adafruit]. This configuration allows the system to report energy per inference based on the accumulated, directly measured energy instead of relying solely on proxy metrics such as FLOPs. 
+
+<figure style="text-align: left">
+  <img src="./assets/img/TinyODOM_wiring_diagram.png"
+       alt="Wiring diagram"
+       width="450" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong>  Wiring diagram for the TinyODOM-EX HIL setup. USB D+/D− and GND connect directly to the BLE33 for serial telemetry, while the USB 5 V supply is routed through the INA228 shunt (Vin+ → Vin−) to measure current and energy. The BLE33 powers the INA228 logic from its 3.3 V rail and configures/reads the INA228 over I2C (SDA/SCL).
+  </figcaption>
+</figure>
+
+As shown in Figures X and Y, TinyODOM-EX instruments energy by inserting an Adafruit INA228 power monitor inline with the DUT supply rail, while leaving the USB data lines (D+/D−) untouched for serial telemetry. The USB 5V supply is routed into the INA228 V<sub>in</sub>+ terminal, and the DUT is powered from the INA228 V<sub>in</sub>- terminal so that the on-board 15 mΩ shunt is in series with the DUT [CITE, Adafruit]. This configuration allows the system to report energy per inference based on the accumulated, directly measured energy instead of relying solely on proxy metrics such as FLOPs. 
 
 A deliberate simplification in TinyODOM-EX is that the DUT configures and reads the INA228 over I2C instead of delegating that to a second "harness" MCU. This reduces coordination complexity. However, this means that the reported energy overhead includes the INA228. According to the INA228's datasheet, the supply current is approximately 0.64 mA, which corresponds to about 2.1 mW power draw at its 3.3 V logic rail [CITE, TI INA228].
 
@@ -419,7 +430,7 @@ Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow int
   - Use this as a reference point for later energy-aware and multi-objective models
 
 
-### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 2)**
+### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Study 2)**
 
 The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. See [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details on the score function. Note that higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
 
