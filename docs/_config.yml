@@ -3,19 +3,19 @@ title: TinyODOM-EX
 author: "Joseph Zales"
 theme: minima
 
-header-pages:
-  - documentation.html
-  - resources.html
+# header-pages:
+#   - documentation.html
+#   - resources.html
 
 
 # Github Pages settings that cannot be changed
-# lsi: false
-# safe: true
-# source: [your repo's top level directory]
-# incremental: false
-# highlighter: rouge
-# gist:
-#   noscript: false
-# kramdown:
-#   math_engine: mathjax
-#   syntax_highlighter: rouge
+lsi: false
+safe: true
+source: ECM202A_2025FALL_PROJECT_1
+incremental: false
+highlighter: rouge
+gist:
+  noscript: false
+kramdown:
+  math_engine: mathjax
+  syntax_highlighter: rouge
