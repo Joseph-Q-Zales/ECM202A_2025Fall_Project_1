@@ -100,22 +100,49 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 
 ## **Slides**
 
-- [Midterm Checkpoint Slides](http://https://docs.google.com/presentation/d/1UtyWay7o1q8KnlKmfcb9YPXjvYXP0kHzi5wXddbCKxM/edit?usp=sharing)  
-- [Final Presentation Slides]([http://](https://docs.google.com/presentation/d/1fY7CZslKuBSrHY7Z8Itt16Krfnphitx3Gw7eq5UoKaw/edit?usp=sharing))
+- [Midterm Checkpoint Slides](https://docs.google.com/presentation/d/1UtyWay7o1q8KnlKmfcb9YPXjvYXP0kHzi5wXddbCKxM/edit?usp=sharing)  
+- [Final Presentation Slides](https://docs.google.com/presentation/d/1fY7CZslKuBSrHY7Z8Itt16Krfnphitx3Gw7eq5UoKaw/edit?usp=sharing)
 
 ---
 # Table of Contents:
 - [Table of Contents:](#table-of-contents)
 - [**1. Introduction**](#1-introduction)
+    - [**1.1 Motivation \& Objective**](#11-motivation--objective)
+    - [**1.2 State of the Art \& Its Limitations**](#12-state-of-the-art--its-limitations)
+    - [**1.3 Novelty \& Rationale**](#13-novelty--rationale)
+    - [**1.4 Potential Impact**](#14-potential-impact)
+    - [**1.5 Challenges**](#15-challenges)
+    - [**1.6 Metrics of Success**](#16-metrics-of-success)
 - [**2. Related Work**](#2-related-work)
 - [**3. Technical Approach**](#3-technical-approach)
+    - [**3.1 TinyODOM-EX System Architecture**](#31-tinyodom-ex-system-architecture)
+    - [**3.2 Dataset and Windowing Pipeline**](#32-dataset-and-windowing-pipeline)
+    - [**3.3 NAS Objective, Search Space, and Training Procedure**](#33-nas-objective-search-space-and-training-procedure)
+    - [**3.4 Hardware in the Loop Measurement and Implementation**](#34-hardware-in-the-loop-measurement-and-implementation)
+    - [**3.5 Key Design Decisions and Tradeoffs**](#35-key-design-decisions-and-tradeoffs)
 - [**4. Evaluation \& Results**](#4-evaluation--results)
+    - [**4.1 Experimental Studies and Metrics**](#41-experimental-studies-and-metrics)
+    - [**4.2 Reproducing TinyODOM on BLE33 (Study 1)**](#42-reproducing-tinyodom-on-ble33-study-1)
+    - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 2)**](#43-single-objective-energy-aware-nas-on-ble33-studies-2)
+    - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
+    - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
+    - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
+    - [**4.x Multi-Objective NAS**](#4x-multi-objective-nas)
+    - [**4.x NAS Trial Budget**](#4x-nas-trial-budget)
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
+    - [**5.1 Summary of Key Findings**](#51-summary-of-key-findings)
+    - [**5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**](#52-lessons-from-energy-aware-nas-and-hil-infrastructure)
+    - [**5.3 Limitations and Threats to Validity**](#53-limitations-and-threats-to-validity)
+    - [**5.4 Future Work**](#54-future-work)
+    - [**5.5 Final Conclusion**](#55-final-conclusion)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
+    - [**7.1. Datasets**](#71-datasets)
+    - [**7.2. Software**](#72-software)
 - [🧭 **Guidelines for a Strong Project Website**](#-guidelines-for-a-strong-project-website)
 - [📊 **Minimum vs. Excellent Rubric**](#-minimum-vs-excellent-rubric)
 - [Project Abstract](#project-abstract)
+    - [Project Video](#project-video)
 - [Project Motivation](#project-motivation)
 - [System Block Diagram](#system-block-diagram)
 
@@ -392,7 +419,7 @@ Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow int
   - Use this as a reference point for later energy-aware and multi-objective models
 
 
-### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 1 and 2)**
+### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Studies 2)**
 
 The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. See [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details on the score function. Note that higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
 
@@ -418,30 +445,29 @@ Table X compares how the scalar score is distributed across components in the no
 The mean model accuracy value becomes slightly more negative in the energy-aware run, indicating a modest loss in validation accuracy as the optimizer trades off some performance for lower energy per inference. The mean latency penalty remains almost unchanged between the two runs, which is consistent with the BLE33 latency budget being satisfied by most trials in both cases. Overall, these statistics confirm that enabling the energy term rebalances the single-objective score toward energy per inference without turning it into a pure energy minimization problem: accuracy still carries the largest weight, but energy now plays a comparable role to latency in shaping the search.
 
 
-- Contrast Study 1 (no energy logging) vs Study 2 (energy logging added to score)
-- Figures
-  - Stacked score contribution plots (accuracy, resource, latency, energy) with score overlay
-  - Optuna optimization history: best score / RMSE vs trial index for both studies
-- Interpretation
-  - How adding energy logging changes which trials are favored
-  - Evidence of convergence or plateauing in both cases
-  - Discussion of any shift in accuracy–latency–resource tradeoff when energy is included
-
 #### **4.3.2 Empirical Relationship Between Energy and Latency**
+A central question in TinyODOM-EX is whether energy must be modeled and optimized explicitly, or whether latency alone is a sufficient proxy on the BLE33. Adding energy awareness increases system complexity and adds an additional source of experimental variance. This section quantifies how tightly energy per inference and latency per inference are coupled in practice. The key result is that, for this target and workload,  
 
-- Quantify how tightly energy and latency are coupled on BLE33
-- Figures
-  - Energy vs latency scatter plots, optionally with linear fit and correlation coefficient
-  - HIL stability plot: latency and energy for repeated runs of the same model
-- Interpretation
-  - Measurement repeatability for both latency and energy
-  - When latency is a good proxy for energy and where it breaks down
-  - Outlier models that are faster but not proportionally more energy efficient
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_EA_energy_latency_diagnostics.png"
+       alt="Latency vs energy and latency vs power plots"
+       width="600" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Empirical mapping of energy and latency on the BLE33 across measured trials. Left: energy per inference versus latency with a least-squares linear fit. Right: average power versus latency, computed as energy divided by latency.
+  </figcaption>
+</figure>
 
+Figure X (left) shows a near-linear relationship between energy per inference and latency across the measured trials. The fitted lined, `Energy (mJ) ≈ 0.053 * Latency (ms) + 0.123`, indicates that most of the variation in energy is explained by the latency alone. This slope, 0.053 mJ/ms, corresponds to an average inference power of approximately 53 mW (since mJ/ms is equivalent to Watts). This implies that candidates primarily change the duration of the computation, while the average power during inference remains relatively stable. The non-zero intercept, 0.123 mJ, suggests a small fixed energy overhead per inference that does not scale with latency. This could be anything from constant work outside the model's main compute or framework overhead.
+
+Figure X (right) explains the shape of the average-power plot. If energy is approximately linear with time, `E = a*t + b`, then the average power is `P_avg = E/t ≈ a + b/t`. This would produce a hyperbolic asymptote at a (53 mW) and the values would plateau at around that value for higher latencies. On the other hand, very short latency trials appear to have a higher power because the fixed-energy term b contributes more strongly when divided by a small t.
+
+Taken together, these observations indicate that, for the BLE33 and the TinyODOM-EX inference workload, energy and latency are tightly coupled across the explored architecture space. As a result, latency serves as a strong proxy for energy over the dominant operating range of interest, and explicitly optimizing energy is unlikely to change model selection except in the very low-latency regime where fixed overheads and modest power variation become more visible.
 
 ### **4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**
+In Study 3, we reformulate the search as a true multi-objective optimization over model accuracy and on-device inference latency. This makes the real deployment tradeoff explicit: lower RMSE typically requires more compute, but real-time operation imposes a hard upper limit on latency set by the streaming update schedule. Rather than collapsing these competing goals into a single weighted score like in Study 1, we use Optuna's multi-objective search to recover a Pareto Frontier, then analyze the results to identify if the real-time constraint is feasible and which hyperparameters most strongly control the accuracy-latency tradeoff.
 
-#### **4.4.1 Pareto Front and Convergence**
+#### **4.4.1 Pareto Front**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_optuna_pareto_front.png"
@@ -455,9 +481,9 @@ The mean model accuracy value becomes slightly more negative in the energy-aware
 
 Figure X shows the tradeoff between aggregate RMSE over v<sub>x</sub> and v<sub>y</sub> and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the non-dominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
 
-The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. In practice, this creates a clear knee in the accuracy–latency curve just before the real-time boundary where small movements past this region increase latency noticeably while improving error only slightly. Such knees on a Pareto front are often used as preferred compromise points in multi-objective decision making [CITE, Branke]. Through this Pareto front plot, we can see that if we had kept the update rate at 10 Hz (100ms real time budget), the accuracy would have been much worse (~2x difference). See  [Section 3.2](#32-dataset-and-windowing-pipeline) for details on the change from 100 ms update rate to 200 ms update rate.
+The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. In practice, this creates a clear knee in the accuracy–latency curve just before the real-time boundary where small movements past this region increase latency noticeably while improving error only slightly. Such knees on a Pareto front are often used as preferred compromise points in multi-objective decision making [CITE, Branke]. Through this Pareto front plot, we can see that if we had enforce a 100 ms latency budget (corresponding to a 10 Hz update rate), the accuracy would have been much worse (~2x difference). See  [Section 3.2](#32-dataset-and-windowing-pipeline) for details on the change from 100 ms update rate to 200 ms update rate.
 
-### **4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**
+#### **4.4.2 Hyperparameter Sensitivity for Latency-Oriented Search**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_collated_hyperparam_plots_grid_Latency.png"
@@ -476,8 +502,9 @@ The bottom row shows that `kernel_size` is a much weaker knob. Good and bad mode
 A similar Optuna hyperparameter-importance analysis for the accuracy–latency run (not shown) yields the same qualitative ranking as the energy-aware study (see Fig. Z in [Section 4.5.2](#452-energy-oriented-hyperparameter-structure) for details). In both cases,  `nb_filters` dominates, `kernel_size` has moderate influence, and the remaining knobs contribute very little. This supports treating `nb_filters` as the primary design knob in the rest of our analysis.
 
 ### **4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**
+Study 4 extends the multi-objective formulation to explicitly include energy per inference, measured with the inline INA228 as described in (Section 3.4)[#34-hardware-in-the-loop-measurement-and-implementation]. Latency is a useful proxy for cost, but energy is the more direct constraint for battery-powered and energy-harvesting deployments. By optimizing accuracy and energy jointly, we obtain the accuracy-energy Pareto frontier that highights the "efficient" region of the design space and enables the selection of models that meet a target energy budget while retaining most of the achievable accuracy. Similar to Study 3, we then identify the most important hyperparameters for the design space.
 
-#### **4.5.1 Pareto Front in Accuracy–Energy Space**
+#### **4.5.1 Pareto Front**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_optuna_pareto_front.png"
@@ -494,7 +521,7 @@ Figure X shows the tradeoff in the accuracy–energy space for the energy-aware 
 
 This shape suggests a natural operating regime for deployment. Very low energy models exist, but they incur substantial error. Increasing energy per inference up to the mid range buys most of the available accuracy improvement, while pushing to very high energy models produces only small additional gains. Together with the accuracy–latency Pareto in Figure X in [Section 4.4.1](#441-pareto-front-and-convergence), these curve show that the search space contains models that are both reasonably accurate, energy efficient and operate in a real-time setting.
 
-### **4.5.2 Energy-Oriented Hyperparameter Structure**
+#### **4.5.2 Energy-Oriented Hyperparameter Structure**
 
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_collated_hyperparam_plots_nb_filters_only_Energy.png"
@@ -601,6 +628,11 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Observation of clear accuracy–latency–energy tradeoffs and identification of nb_filters as the dominant hyperparameter.
 - High-level statement of what the results collectively show about energy-aware NAS on microcontrollers.
 
+
+#### **5.1.1 Latency and Energy are Tightly Coupled**
+One reason this coupling is so strong on the BLE33 is that inference executes on a sequential general-purpose MCU core (Nordic nRF52840, ARM Cortex-M4F) with limited parallel compute resources [CITE, NEEDED]. For this target, most architectural changes effectively scale the number of executed operations, which changes inference time more than it changes average power at a fixed operating point. As a result, energy tends to scale approximately with latency (energy ≈ power × time) over the explored search space.
+
+In contrast, on ML accelerators with substantial spatial parallelism, latency can drop due to higher parallel utilization without a proportional drop in energy, because the platform may trade lower time for higher instantaneous power or different data-movement behavior. In such settings, explicit energy measurement is more likely to be necessary for model selection [CITE, NEEDED].
 
 ### **5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**
 
