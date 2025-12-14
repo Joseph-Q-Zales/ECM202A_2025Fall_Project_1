@@ -122,6 +122,7 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
       - [**3.2.1 Data Split**](#321-data-split)
       - [**3.2.2 Data Processing**](#322-data-processing)
     - [**3.3 NAS Objective, Search Space, and Training Procedure**](#33-nas-objective-search-space-and-training-procedure)
+      - [**3.3.1 Objective Functions**](#331-objective-functions)
     - [**3.4 Hardware in the Loop Measurement and Implementation**](#34-hardware-in-the-loop-measurement-and-implementation)
     - [**3.5 Key Design Decisions and Tradeoffs**](#35-key-design-decisions-and-tradeoffs)
 - [**4. Evaluation \& Results**](#4-evaluation--results)
@@ -243,7 +244,8 @@ TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular 
 <figure style="text-align: left">
   <img src="./assets/img/TinyODOM-EX_blockdiagram.png"
        alt="TinyODOM-EX system block diagram"
-       width="600" />
+       width="600" 
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure Y.</strong> Per-trial workflow for TinyODOM-EX. Each trial trains and evaluates a candidate model on the GPU server, then exports to TFLite Micro, compiles and uploads firmware via Arduino CLI, and measures on-device metrics in the HIL loop. Trials may terminate early when candidates are infeasible or are pruned.
   </figcaption>
@@ -259,7 +261,8 @@ TinyODOM-EX replaces hard-coded constants in the legacy notebook with a YAML con
 <figure style="text-align: left">
   <img src="./assets/img/oxiod_modality_examples.png"
        alt="OxIOD collection environment depiction"
-       width="600" />
+       width="600" 
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure x.</strong> OxIOD collection environment and example device placements (handheld, pocket, handbag, trolley) within the Vicon motion-capture room. This motivates the modality diversity used in TinyODOM-EX and the availability of high-quality ground truth for evaluation [CITE, OxIOD].
   </figcaption>
@@ -272,7 +275,8 @@ Similar to TinyODOM, this project uses the Oxford Inertial Odometry Dataset (OxI
 <figure style="text-align: left">
   <img src="./assets/plots/handheld_data4_raw_vi4_120seconds_10x.gif"
        alt="Trajectory example"
-       width="450" />
+       width="450" 
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure Y. Example OxIOD handheld sequence (first 120 seconds) visualized using Vicon ground truth. The trajectory illustrates the small-room operating envelope and the continuous nature of each sequence. </strong> .
   </figcaption>
@@ -292,6 +296,35 @@ Similar to TinyODOM, the window size for these studies was 200 samples [CITE, Ti
 
 This report uses the same terminology for experimentation as Optuna. A "study" refers to a full Optuna run with an objective, and a trial refers to one architecture and its resulting training, validation and hardware measurements [CITE, Optuna]. TinyODOM-EX supports both single-objective (optimization with a scoring function) and multi-objective studies, with the configuration file controlling which type is run and whether energy is included in the optimization. 
 
+TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution network that maps the windowed inertial inputs to velocity (x and y) outputs. The search space is derived from the TinyODOM TCN design, while extending evaluation to incorporate hardware-grounded constraints *and* measured energy [CITE, TinyODOM]. Across the full set of sampled hyperparemeters (detailed in Table X) for TinyODOM-EX, the search space spans approximately 8 million candidate combinations. 
+
+<figure style="text-align: left">
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table X.</strong> Hyperparameter search space summary for the TinyODOM-EX TCN family. The table lists the tunable parameters available to Optuna. These parameters are the same as in TinyODOm [CITE, TinyODOM].
+  </figcaption>
+</figure>
+
+| Hyperparameter       | Range                     | What it does                                             |
+| -------------------- | ------------------------- | -------------------------------------------------------- |
+| nb_filters           | 2 to 63                   | Controls model width / capacity                          |
+| kernel_size          | 2 to 15                   | Temporal receptive field per layer                       |
+| dropout_rate         | 0 to 1                    | Regularization                                           |
+| use_skip_connections | T/F                       | Residual or plain blocks                                 |
+| norm_flag            | T/F                       | Normalization                                            |
+| dilations            | Categorical (465 options) | Pattern of dilation across layers (e.g., [1, 4, 16, 32]) |
+
+The hyperparemeters in Table X jointly influence not only the accuracy of the model (RMSE), but also the feasibility of deployment to the target due to the flash/RAM constraints.
+
+#### **3.3.1 Objective Functions**
+For single objective studies, TinyODOM-EX uses a score function that combines the validation accuracy, memory usage, latency and energy per inference (see Eq. 1). Accuracy is computed from the validation RMSE on the predicted velocity components. Memory terms are computed from the reported flash and RAM usage (returned by the HIL pipeline). Even though latency was included as a metric in TinyODOM, we chose to change how the penalty was calculated. In TinyODOM, the latency penalty was a scalar multiplied by the latency in milliseconds [CITE, TinyODOM code]. We found that this was challenging to tune and decided to instead compare the latency to the real-time budget and only apply the latency penalty when the measured latency exceeded the budget. The budget is derived based on the sampling rate and stride length. We also decided to clamp that penalty to a maximum of 2 in order to keep the scores reasonable. When energy is enabled (based on the config), the score penalizes candidates whose measured energy exceed a target. In our experiments, we chose to use 50mW as our target. Note, that unlike the latency penalty, the energy penalty could actually be a bonus if the power was less than the target.
+
+```math
+\text{score} = \underbrace{\text{Accuracy}}_{\displaystyle -(\mathrm{RMSE}_{v_x} + \mathrm{RMSE}_{v_y})} \;+\; \underbrace{\text{MemoryTerm}}_{\displaystyle 0.01\!\left(\frac{\mathrm{RAM}}{\mathrm{maxRAM}} + \frac{\mathrm{Flash}}{\mathrm{maxFlash}}\right)} \;-\; \underbrace{\text{LatencyPenalty}}_{\displaystyle \text{latency violation}} \;-\; \underbrace{\text{EnergyPenalty}}_{\displaystyle 0.15\,(E_{\text{meas}} - E_{\text{target}})}.
+```
+
+```math
+\mathrm{LatencyPenalty} = \begin{cases} 0, & \text{if } \mathrm{latency}_{\mathrm{ms}} \le \mathrm{latencyBudget}_{\mathrm{ms}}, \\[6pt] \min\!\left( 2,\; \dfrac{\mathrm{latency}_{\mathrm{ms}} - \mathrm{latencyBudget}_{\mathrm{ms}}} {\mathrm{latencyBudget}_{\mathrm{ms}}} \right), & \text{if } \mathrm{latency}_{\mathrm{ms}} > \mathrm{latencyBudget}_{\mathrm{ms}}. \end{cases} 
+```
 
 - Temporal convolutional network search space
   - depth, kernel sizes, dilation pattern, channel counts, residual connections, and heads that predict velocity components
@@ -437,13 +470,14 @@ The mean $$model\_acc$$ value becomes slightly more negative in the energy-aware
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_optuna_pareto_front.png"
        alt="Accuracy–latency Pareto front for multi-objective NAS without energy term"
-       width="600" />
+       width="600" 
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.</strong> Accuracy–latency Pareto front for the multi-objective NAS run on the BLE33 without an explicit energy term. Blue points are individual trials, plotted by latency and aggregate  RMSE. The red curve marks the Pareto-optimal set. The vertical dashed line at 200ms indicates the real-time latency budget implied by the 100Hz sampling rate and a stride of 20 samples between windows.
   </figcaption>
 </figure>
 
-Figure X shows the tradeoff between aggregate RMSE over \(v_x\) and \(v_y\) and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the non-dominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
+Figure X shows the tradeoff between aggregate RMSE over $v_x$ and $v_y$ and on-device latency in the accuracy–latency multi objective run. The cloud of blue points indicates that the search explored a wide range of models, from very fast but inaccurate configurations to slower and more accurate ones. The red Pareto curve traces the non-dominated set (i.e. the best possible trade-off trials). Moving along this curve from left to right trades higher latency for lower error. The front drops steeply as latency increases from tens of milliseconds to roughly the 150–200 ms range, then flattens as latency approaches several hundred milliseconds.
 
 The vertical 200 ms line marks the real-time budget implied by the streaming configuration (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details). Several Pareto points lie to the left of this line with aggregate RMSE close to the global minimum, which shows that satisfying the real-time constraint is not restrictive for this dataset and search space. Slower models beyond the budget provide only modest additional accuracy gains compared to the best models that already meet the budget. In practice, this creates a clear knee in the accuracy–latency curve just before the real-time boundary where small movements past this region increase latency noticeably while improving error only slightly. Such knees on a Pareto front are often used as preferred compromise points in multi-objective decision making [CITE, Branke]. Through this Pareto front plot, we can see that if we had kept the update rate at 10 Hz (100ms real time budget), the accuracy would have been much worse (~2x difference). See  [Section 3.2](#32-dataset-and-windowing-pipeline) for details on the change from 100 ms update rate to 200 ms update rate.
 
@@ -452,7 +486,8 @@ The vertical 200 ms line marks the real-time budget implied by the streaming con
 <figure style="text-align: left">
   <img src="./assets/plots/MO_no_E_collated_hyperparam_plots_grid_Latency.png"
        alt="Multiple Objective hyperparamameters plots nb filters vs accuracy / latency"
-       width="700" />
+       width="700"
+       style="display:block; margin:0 auto;" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure x.</strong> Hyperparameter sensitivity in the accuracy–latency multi-objective run on the BLE33. Top: nb_filters versus vector RMSE (left, with a logarithmic best-fit curve) and latency per inference (right, with a linear best-fit line). Bottom: kernel_size versus vector RMSE (left) and latency (right).
   </figcaption>
@@ -471,7 +506,8 @@ A similar Optuna hyperparameter-importance analysis for the accuracy–latency r
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_optuna_pareto_front.png"
        alt="Accuracy–energy Pareto front for multi-objective energy-aware NAS"
-       width="600" />
+       width="600" 
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.</strong> Accuracy–energy Pareto front for the multi-objective NAS run with an explicit energy objective. Blue points show individual trials plotted by energy per inference (mJ) and aggregate RMSE. The red curve denotes the Pareto-optimal set. The target energy used in the scoring function, 10mJ, corresponds to running within the 200ms latency budget at a nominal power of 50mW.
   </figcaption>
@@ -487,7 +523,8 @@ This shape suggests a natural operating regime for deployment. Very low energy m
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_collated_hyperparam_plots_nb_filters_only_Energy.png"
        alt="Multiple Objective Energy Aware hyperparameters plots nb filters vs accuracy / energy"
-       width="700" />
+       width="700"
+       style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure x.</strong> Effect of nb_filters on accuracy and energy per inference in the accuracy–energy multi objective NAS run on the BLE33. Left: nb_filters versus vector RMSE with a logarithmic best-fit curve. Right: nb_filters versus energy per inference with a linear best-fit line..
   </figcaption>
@@ -500,7 +537,8 @@ Figure X shows that for the energy aware multi objective study, `nb_filters` are
 <figure style="text-align: left">
   <img src="./assets/plots/MO_EA_optuna_hyperparameter_importances.png"
        alt="Optuna hyperparameter importance for accuracy–energy multi-objective NAS"
-       width="450" />
+       width="450"
+       style="display:block; margin:0 auto;" />
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure Z.</strong> Optuna-created hyperparameter importance for the accuracy–energy multi-objective NAS run on the BLE33. Bars show the relative contribution of each hyperparameter to variation in the two objectives (aggregate RMSE and energy per inference). nb_filters dominates both objectives, while kernel_size has moderate influence and the remaining knobs contribute little.
   </figcaption>
