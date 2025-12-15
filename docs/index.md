@@ -129,7 +129,7 @@ Ultra-low-power inertial odometry is valuable in settings without GPS, but embed
     - [**5.5 Final Conclusion**](#55-final-conclusion)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
-    - [**7.1. Datasets**](#71-datasets)
+    - [**7.1. Datasets Setup and Information**](#71-datasets-setup-and-information)
     - [**7.2. Software**](#72-software)
 
 ---
@@ -788,14 +788,40 @@ TinyODOM-EX is an end-to-end hardware-in-the-loop NAS pipeline for microcontroll
 
 # **7. Supplementary Material**
 
-### **7.1. Datasets**
+### **7.1. Datasets Setup and Information**
 
-- OxIOD: source, URL, sensor modalities, collection settings, and which subsets used
-- Data format: raw IMU streams, trajectories, and any intermediate outputs the pipeline writes (windowed tensors, cached datasets)
-- Preprocessing steps: extraction, normalization, window generation, split restoration, and how prepare_oxiod.py makes this reproducible for other users
-  
+- Download the OxIOD “Complete Dataset” zip from: http://deepio.cs.ox.ac.uk/ and rename it to `OxIOD.zip`.
+- From the repo root, run:
+  ```bash
+  python data/dataset_download_and_splits/prepare_oxiod.py --zip-path OxIOD.zip
+  ```
+- The script extracts into `data/oxiod/`, normalizes folder names (for example, slow walking → slow_walking), and restores the curated Train.txt, Valid.txt, Test.txt, and Train_Valid.txt split files tracked in this repo.
+- Each activity folder contains raw/ and syn/ subfolders. raw/ contains unsynchronized IMU and Vicon data with higher-precision timestamps, while syn/ contains synchronized IMU–ground-truth pairs (with less precise timestamps). All results in this report use syn/.
+- Data files are CSV. Ground truth is vi*.csv (Vicon) and sensors are imu*.csv. The CSV headers include a Time column plus pose fields for Vicon and IMU channels for sensors (attitude, rotation rates, gravity, user acceleration, magnetometer).
+- For information on what each data file contains, the README in the data/oxiod folder has information.
+
 ### **7.2. Software**
+**Repository setup:**
+- Create and activate the pinned Conda environment:
+  ```bash
+  conda env create -f environment.yml -n tinyodomex
+  conda activate tinyodomex
+  ```
+- Clone the submodule (TFLite Micro is included as a submodule)
+  ```bash
+  git clone --recurse-submodules <url>
+  ```
+  or if already cloned:
+  ```bash
+  git submodule update --init --recursive
+  ```
+- Install the Arduino CLI toolchain inside the repo:
+  ```bash
+  ./setup_arduino.sh
+  ```
 
-- External libraries: TensorFlow and TFLite Micro versions, Optuna, ZeroMQ, Arduino CLI, and any plotting or logging libraries
-  - include talk of the using the shell scripts and having everything internal to both the conda environment and the folder
-- Internal modules: NAS client, HIL server, shared utilities, config files, firmware sketches, and dataset prep scripts, with short one line roles for each
+**Key components**
+- `src/nas_model_client.py`: GPU-side NAS + training (Optuna).
+- `src/hil_server.py`: device-side compile/upload/measure loop (Arduino CLI + serial).
+- `src/nas_config.yaml`: shared configuration for device, dataset, objectives, and budgets.
+- `tinyodom_tcn_no_energy.ino` / `tinyodom_tcn_energy.ino`: latency-only vs latency+energy measurement firmware.
