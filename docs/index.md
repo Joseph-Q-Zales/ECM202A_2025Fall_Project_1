@@ -768,7 +768,7 @@ TinyODOM-EX is an end-to-end hardware-in-the-loop NAS pipeline for microcontroll
 
 # **7. Supplementary Material**
 
-### **7.1. Datasets Setup and Information**
+### **7.1. Dataset Setup and Information**
 
 - Download the OxIOD “Complete Dataset” zip from: http://deepio.cs.ox.ac.uk/ and rename it to `OxIOD.zip`.
 - From the repo root, run:
