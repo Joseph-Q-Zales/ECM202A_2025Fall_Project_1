@@ -98,39 +98,15 @@ Ultra-low-power inertial odometry is valuable in settings without GPS, but embed
 - [Final Presentation Slides](https://docs.google.com/presentation/d/1fY7CZslKuBSrHY7Z8Itt16Krfnphitx3Gw7eq5UoKaw/edit?usp=sharing)
 
 ---
-# Table of Contents:
-- [Table of Contents:](#table-of-contents)
+
+### Table of Contents:
 - [**1. Introduction**](#1-introduction)
-    - [**1.1 Motivation \& Objective**](#11-motivation--objective)
-    - [**1.2 State of the Art \& Its Limitations**](#12-state-of-the-art--its-limitations)
-    - [**1.3 Novelty \& Rationale**](#13-novelty--rationale)
-    - [**1.4 Potential Impact**](#14-potential-impact)
-    - [**1.5 Challenges**](#15-challenges)
-    - [**1.6 Metrics of Success**](#16-metrics-of-success)
 - [**2. Related Work**](#2-related-work)
 - [**3. Technical Approach**](#3-technical-approach)
-    - [**3.1 TinyODOM-EX System Architecture**](#31-tinyodom-ex-system-architecture)
-    - [**3.2 Dataset and Windowing Pipeline**](#32-dataset-and-windowing-pipeline)
-    - [**3.3 NAS Objective, Search Space, and Training Procedure**](#33-nas-objective-search-space-and-training-procedure)
-    - [**3.4 Hardware in the Loop Measurement and Implementation**](#34-hardware-in-the-loop-measurement-and-implementation)
-    - [**3.5 Key Design Decisions and Tradeoffs**](#35-key-design-decisions-and-tradeoffs)
 - [**4. Evaluation \& Results**](#4-evaluation--results)
-    - [**4.1 Experimental Studies and Metrics**](#41-experimental-studies-and-metrics)
-    - [**4.2 Reproducing TinyODOM on BLE33 (Study 1)**](#42-reproducing-tinyodom-on-ble33-study-1)
-    - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Study 2)**](#43-single-objective-energy-aware-nas-on-ble33-study-2)
-    - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
-    - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
-    - [**4.6 NAS Trial Budget and Future Practical Convergence Lessons**](#46-nas-trial-budget-and-future-practical-convergence-lessons)
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
-    - [**5.1 Summary of Key Findings**](#51-summary-of-key-findings)
-    - [**5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**](#52-lessons-from-energy-aware-nas-and-hil-infrastructure)
-    - [**5.3 Limitations and Threats to Validity**](#53-limitations-and-threats-to-validity)
-    - [**5.4 Future Work**](#54-future-work)
-    - [**5.5 Final Conclusion**](#55-final-conclusion)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
-    - [**7.1. Datasets Setup and Information**](#71-datasets-setup-and-information)
-    - [**7.2. Software**](#72-software)
 
 ---
 
