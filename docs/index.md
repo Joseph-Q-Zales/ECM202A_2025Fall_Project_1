@@ -126,7 +126,7 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
     - [**4.3 Single-Objective Energy-Aware NAS on BLE33 (Study 2)**](#43-single-objective-energy-aware-nas-on-ble33-study-2)
     - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
     - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
-    - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
+    - [**4.6 NAS Trial Budget and Future Practical Convergence Lessons**](#46-nas-trial-budget-and-future-practical-convergence-lessons)
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
     - [**5.1 Summary of Key Findings**](#51-summary-of-key-findings)
     - [**5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**](#52-lessons-from-energy-aware-nas-and-hil-infrastructure)
@@ -331,7 +331,7 @@ To get the accuracy metric, each trial trains for a minimum of 40 epochs and a m
 <figure style="text-align: left">
   <img src="./assets/img/TinyODOM_wiring_diagram.png"
        alt="Wiring diagram"
-       width="450" 
+       width="650" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.</strong>  Wiring diagram for the TinyODOM-EX HIL setup. USB D+/D− and GND connect directly to the BLE33 for serial telemetry, while the USB 5 V supply is routed through the INA228 shunt (Vin+ → Vin−) to measure current and energy. The BLE33 powers the INA228 logic from its 3.3 V rail and configures/reads the INA228 over I2C (SDA/SCL).
@@ -379,26 +379,26 @@ Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow int
 
 # **4. Evaluation & Results**
 
-- Summarize the four experimental studies and common metrics
-- Present baseline reproduction of TinyODOM on BLE33 as a reference point
-- Evaluate the effect of adding energy logging in single-objective NAS
-- Analyze multi-objective fronts for accuracy–latency and accuracy–energy
-- Quantify NAS convergence and trial budget sufficiency
+This section reports the experimental results of TinyODOM-EX across four neural architecture search studies on the Arduino Nano 33 BLE Sense (BLE33). All studies used the same model search space, training procedure, data splits, and hardware-in-the-loop (HIL) measurements described in [Section 3](#3-technical-approach). Results are reported in terms of prediction accuracy, deployability on the device under test and the practical tradeoffs between accuracy and on-device costs.
 
 
 ### **4.1 Experimental Studies and Metrics**
 
-- Overview of the four studies
-  - Study 1: Single-objective NAS, BLE33, score without energy logging
-  - Study 2: Single-objective NAS, BLE33, score with energy logging
-  - Study 3: Multi-objective NAS, accuracy vs latency
-  - Study 4: Multi-objective NAS, accuracy vs energy per inference
-- Common evaluation metrics
-  - OxIOD splits and velocity / trajectory error metrics (RMSE, trajectory drift)
-  - Latency per inference on BLE33, flash usage, RAM usage
-  - Energy per inference from HIL measurement pipeline
-- Pointer back to Section 3 for experimental setup
-  - HIL infrastructure, number of trials, key hyperparameters
+TinyODOM-EX evaluates four Optuna-based NAS studies that differ only in the optimization objective, while keeping the dataset, training loop, model family and deployment process fixed. Studies 1 and 2 use a single scalar score function the combines accuracy with on-device constraints. Studies 3 and 4 use multi-objective optimization to explicitly expose the tradeoffs, producing Pareto frontiers instead of a single "best" model. Table X summarizes the four studies below.
+
+<figure style="text-align: left">
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table X.</strong> Study composition.
+  </figcaption>
+</figure>
+
+| Study | Objective formulation                    | Hardware measurements used              | Trials |
+| ----: | ---------------------------------------- | --------------------------------------- | -----: |
+|     1 | Single-objective, non-energy-aware score | Latency, RAM, flash                     |     75 |
+|     2 | Single-objective, energy-aware score     | Latency, energy, RAM, flash             |     75 |
+|     3 | Multi-objective, accuracy vs latency     | Latency                                 |    135 |
+|     4 | Multi-objective, accuracy vs energy      | Energy per inference                    |    135 |
+
 
 
 ### **4.2 Reproducing TinyODOM on BLE33 (Study 1)**
@@ -467,7 +467,7 @@ However, we can compare some aspects of these models. For example, our baseline 
 <figure style="text-align: left">
   <img src="./assets/plots/SF_no_E_trajectory_drift_diagnostics.png"
        alt="OxIOD test split drift over time"
-       width="600" 
+       width="700" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.1.</strong> Integrated position drift across the test split from the Study 1 baseline. Left: cumulative position error magnitude over time. Right: position error components in x (solid) and y (dashed).
@@ -479,7 +479,7 @@ Figure X.1 provides a modality-level view of how integrated position error drift
 <figure style="text-align: left">
   <img src="./assets/plots/SF_no_E_velocity_over_time_traj_3.png"
        alt="Trajectory 3 velocity over time"
-       width="650" 
+       width="700" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.2.</strong> Velocity prediction over time for Trajectory 3 (Pocket), showing ground-truth versus predicted v<sub>x</sub> and v<sub>y</sub>. Per-axis RMSE on this trajectory is 0.12 m/s for v<sub>x</sub>  and 0.113 m/s for v<sub>y</sub>. 
@@ -491,7 +491,7 @@ Figure X.2 shows the model outputs in the same space the network predicts. The p
 <figure style="text-align: left">
   <img src="./assets/plots/SF_no_E_trajectory_3_model_vs_accel.png"
        alt="Trajectory 3 position"
-       width="650" 
+       width="700" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.3.</strong> Trajectory 3 position overlay comparing ground truth, the model-integrated trajectory, and a naive acceleration baseline formed by raw double integration. The model-integrated trajectory achieves an ATE = 7.69 m, while the naive acceleration baseline diverges by serveral orders of magnitude (ATE=63,897.98 m).
@@ -501,7 +501,7 @@ Figure X.2 shows the model outputs in the same space the network predicts. The p
 <figure style="text-align: left">
   <img src="./assets/plots/SF_no_E_trajectory_3_position_error_evolution.png"
        alt="Trajectory 3 position error over time"
-       width="450" 
+       width="500" 
        style="display:block; margin:0 auto;"/>
   <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
     <strong>Figure X.4.</strong> Trajectory 3 position error evolution on a logarithmic scale comparing the model-integrated trajectory against the naive acceleration baseline.
@@ -673,73 +673,48 @@ Figure X shows that for the energy aware multi objective study, `nb_filters` are
 
 Figure Z summarizes this pattern using Optuna’s hyperparameter importance metrics for the energy-aware run. For both objectives, `nb_filters` accounts for the vast majority of explained variation (importance ≈ 0.8–0.9), `kernel_size` has modest but non-negligible influence, and the remaining hyperparameters (dilation pattern, dropout, normalization flag, and skip connections) contribute very little. 
 
-### **4.6 Cross-Study Comparison and NAS Trial Budget**
+### **4.6 NAS Trial Budget and Future Practical Convergence Lessons**
+This section evaluates whether the trial budgets used in TinyODOM-EX were sufficient by examining the opmizer convergence. For the single-objective studies, convergence appears when Oputna's best score plateaus. For the multi-objective studies, convergence is determined through hypervolume progression, where increases correspond to improvements in the non-dominated set (i.e. the frontier).
 
-#### **4.6.1 Summary of Best Models Across Studies**
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_no_E_optuna_optimization_history.png"
+       alt="Optuna non-energy aware optimization history"
+       width="450"
+       style="display:block; margin:0 auto;" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Single-objective optimization history for the non-energy-aware score on BLE33. Each point is a completed trial’s objective value and the line is the comparitive best scores.
+  </figcaption>
+</figure>
 
-- Table summarizing selected models from each study
-  - For each: RMSE, latency, energy, flash, RAM
-- Comparison
-  - Baseline TinyODOM-like model vs single-objective energy-aware vs multi-objective models
-  - Tradeoff between simplicity of objective and quality of resulting models
+The non-energy-aware run improves rapidly quickly, with most gains occuring within the first 15 trials. This is because Optuna's first 15 trials are, by default, essentially randomly exploring the design space. After the inital phase, improvements become more infrequnet and the study spends most of the remaining trials exploring trials that do not surpass the incumbant. Practically, this indicates taht the most attainable benefit is captured early, and additional trials primarily reduce the risk of missing a slightly better configuration.
 
-#### **4.6.2 NAS Trial Budget and Practical Convergence**
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_EA_optuna_optimization_history.png"
+       alt="Optuna energy aware optimization history"
+       width="450"
+       style="display:block; margin:0 auto;" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Single-objective optimization history for the energy-aware score on BLE33. Each point is a completed trial’s objective value and the line is the incumbent best score. The study includes a seeded trial from the best non-energy-aware model, which sets the initial incumbent score.
+  </figcaption>
+</figure>
 
-- Use all studies to comment on how many trials are “enough”
-- Figures
-  - Optuna optimization history curves across studies
-  - Hypervolume progression curves for Study 3 and Study 4 on a shared axis
-- Interpretation
-  - Points where additional trials give minimal improvement
-  - Practical guidance: recommended trial counts for future runs on similar hardware
-  - Discussion of remaining uncertainty and where more budget might still help
+The energy-aware run appears flatter because the study was seeded with the best model from the non-energy-aware run. This seeded trial sets a strong incumbent at the start, so the best-score curve only moves if a later energy-aware candidate exceeds that baseline. Note that the remaining 14 trials in the exploration phase were still randomly chosen. The distribution of trial scores shows that the optimizer still explores broadly, but most candidates fall below the seeded model, which indicates that the seed is already near-optimal under the energy-aware objective given measurement noise and the limited number of dominant architectural knobs.
 
-<!-- ### **4.x Multi-Objective NAS**
-- Pareto Frontiers for both latency and EA studies
+<figure style="text-align: left">
+  <img src="./assets/plots/MO_no_E_hypervolume_progression.png"
+       alt="Optuna non-energy aware hypervolume progression history"
+       width="450"
+       style="display:block; margin:0 auto;" />
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Hypervolume progression for the multi-objective run (example shown for the non-energy-aware multi-objective study, but the energy-aware study followed an almost identical curve). Increasing hypervolume indicates improvement in the discovered Pareto set.
+  </figcaption>
+</figure>
 
-### **4.x NAS Trial Budget**
-- **Goal: choose NAS trial budgets from convergence, not arbitrary counts**
-  - Question: how many NAS trials are actually needed for this search space and objectives?
-  - Approach: look at convergence of (1) best objective value over trials (single-objective) and (2) hypervolume over trials (multi-objective).
+The hypervolume cuver rises sharply early and then enters a long plateau. The plateu indicates that the Pareto front shape was largely discovered in the first (random) phase of the run, while later trials only produce small incremental refinements. Small later increases still occur, but they do not change the qualitative conclusiondrawn from the Pareto front plots in Section 4.4 and 4.5.
 
-- **Single-objective NAS, score without energy awareness**
-  - Optimization history shows rapid improvement in the first ~10–20 trials.
-  - Best objective value is already reached by roughly trial 20–25.
-  - Relative improvement of best value from 25→50 and 50→75 trials is effectively 0 percent.
-  - Interpretation: the search has converged by ~25 trials. The remaining trials only resample around an already discovered optimum.
+These three plots together support practical trial-budget guidance for this project's search space. For single-objective runs, most improvements occur within the first 15 to 25 trials. A conservative budget that still protects against a late best model is betwen 40 and 60 trials. The 75-trial runs used here are more than sufficient and spend a substantial time with diminishing returns. For multi-objective runs, the Pareto frontier quality improves rapidly and then stabilizes. Again, a budget of 40 to 60 trials would be enough to determine a stable Pareto front. The 135-trial studies used here were more than what was needed to determine the fronteir. 
 
-- **Single-objective NAS, score with energy awareness**
-  - Similar behavior: best value improves early and then stays flat.
-  - Again, no measurable improvement in best value after about ~25 trials.
-  - Conclusion: for this scoring function and search space, ~30–40 trials is a safe upper bound.
-
-- **Effect of seeding with a default configuration**
-  - Later single-objective runs start with a manually seeded “default” model (e.g., TinyODOM-like baseline).
-  - In those runs the seeded trial is already as good as or better than everything the optimizer finds later.
-  - This makes the best-value curve flat, and the plots show that NAS never beats the baseline even with many extra trials.
-  - Interpretation: the default model is already near-optimal under the chosen score, and additional trials serve mainly to confirm that.
-
-- **Multi-objective NAS with energy awareness (e.g., energy vs accuracy)**
-  - Hypervolume increases sharply over the first ~10–15 trials.
-  - By ~20–30 trials, hypervolume is within about 1 percent of its final value.
-  - From ~30 to 110 trials, only tiny hypervolume gains are observed.
-  - Interpretation: the Pareto front is essentially discovered by ~20–30 trials; further trials slightly refine but do not change the frontier.
-
-- **Multi-objective NAS without energy awareness (e.g., energy vs latency or latency vs accuracy)**
-  - Same qualitative pattern: rapid hypervolume growth at the beginning, then an early plateau.
-  - Hypervolume after ~15–20 trials is very close to the final value at 100+ trials.
-  - Conclusion: 40–60 trials would have been more than sufficient for this multi-objective run.
-
-- **Overall conclusions about trial budgets**
-  - For **single-objective** studies in this project, convergence occurs by ~25 trials. A budget of **30–40 trials** is a conservative choice.
-  - For **multi-objective** studies, the Pareto hypervolume converges by ~20–30 trials. A budget of **40–60 trials** is a conservative choice.
-  - The larger budgets used in the final experiments (75 and 135 trials) are therefore more than sufficient and mostly spend time in the diminishing-returns regime.
-
-- **Potential stopping criteria for future runs**
-  - Single-objective: stop if the best score has not improved for the last 15–20 trials.
-  - Multi-objective: stop if hypervolume has improved by less than ~1 percent over the last 20 trials.
-  - These criteria formalize the convergence behavior observed in the plots. -->
-
+A resonable stopping rule for future runs on similar workloads could be to terminate a single-objective study once the best score has not improved for 15 to 20 consecutive trials and for multi-objective studies to terminate once the hypervolume changes by less than 1% over the last 15 to 20 consecutive trials. 
 
 ---
 # **5. Discussion & Conclusions**
