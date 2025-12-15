@@ -732,25 +732,6 @@ The TinyODOM-EX framework provides a foundation for several promising research d
 
 Finally, a natural measurement extension is a two-board configuration where a dedicated harness MCU performs the power measurement and logging while the DUT runs inference with minimal measurement overhead. 
 
-**Broaden hardware targets**. Extend
-  - Extend TinyODOM-EX to additional microcontrollers and boards with integrated NPUs or accelerators.
-  - Use these platforms to test whether the approximately linear latency–energy relationship observed on BLE33 persists on more optimized hardware or whether accelerators change the shape of the tradeoff.
-
-- Extend objectives and model space
-  - Incorporate richer multi-objective formulations (for example, three-way accuracy–latency–energy fronts, or energy-normalized error).
-  - Expand the search space to include alternative temporal architectures and explicit quantization or pruning strategies.
-
-- Improve tooling and portability
-  - Evolve TinyODOM-EX into a reusable “tool” that can be pointed at different projects with minimal changes.
-  - Support multiple compiler and uploader backends (for example, Arduino CLI, PlatformIO, vendor-specific SDKs) behind a common HIL interface so that new boards can be added by implementing a single backend.
-  - Provide configuration templates and scripts that make it easy to plug in new datasets, search spaces, and devices.
-
-- Toward real deployments
-  - Integrate NAS-selected models into end-to-end systems (such as small robots or wearables) to evaluate navigation performance beyond offline OxIOD metrics.
-  - Revisit RP2040-class boards with an external debug/reset controller or similar recovery mechanism to enable reliable multi-device NAS.
-  
-A natural extension of this design is a two-board measurement configuration where a dedicated harness MCU manages power instrumentation and the DUT runs inference with minimal measurement overhead. This would better isolate DUT-only energy but increases hardware and software complexity and introduces additional failure modes for unattended NAS runs. TinyODOM-EX prioritizes robustness and repeatability, so the single-board instrumentation approach is used for all results reported here.
-
 ### **5.5 Final Conclusion**
 
 TinyODOM-EX is an end-to-end hardware-in-the-loop NAS pipeline for microcontroller inertial odometry that measures deployability metrics (flash, RAM, latency, and optionally energy) during optimization. Across four Optuna studies on the Arduino Nano 33 BLE Sense, the pipeline supported unattended searches while enforcing feasibility in the HIL loop to ensure reported candidates are deployable by construction. Multi-objective runs produced clear Pareto fronts and showed that `nb_filters` is the primary accuracy versus cost knob in this search space. On BLE33, energy and latency were tightly coupled (`Energy (mJ) ≈ 0.053 * Latency (ms) + 0.123`) which makes latency an effective proxy for energy on this target. Overall, TinyODOM-EX provides a reusable reference workflow for energy-aware TinyML NAS and a foundation for extending these studies to hardware where energy and latency diverge.
