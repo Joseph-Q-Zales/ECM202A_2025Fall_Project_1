@@ -416,6 +416,7 @@ In the table below, two families of accuracy metrics are reported. First is the 
     <strong>Table X.</strong> Baseline (Study 1) best model summary on BLE33.
   </figcaption>
 </figure>
+
 | Metric                                |     Value |
 | ------------------------------------- | --------: |
 | Scalar score                          |      -0.4 |
