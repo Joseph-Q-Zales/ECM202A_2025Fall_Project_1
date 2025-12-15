@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          environment-file: environment.yml
+          activate-environment: tinyodomex
+          auto-activate-base: false
+          cache-environment-key: "conda-${{ runner.os }}-${{ hashFiles('environment.yml') }}"
+          use-only-cache-if-available: true
+
+      - name: Run tests
+        shell: bash -el {0}
+        run: pytest test/
