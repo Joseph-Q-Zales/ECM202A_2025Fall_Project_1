@@ -103,8 +103,8 @@ Ultra-low-power inertial odometry is valuable in settings without GPS, but embed
 - [**1. Introduction**](#1-introduction)
 - [**2. Related Work**](#2-related-work)
 - [**3. Technical Approach**](#3-technical-approach)
-- [**4. Evaluation \& Results**](#4-evaluation--results)
-- [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
+- [**4. Evaluation and Results**](#4-evaluation-and-results)
+- [**5. Discussion and Conclusions**](#5-discussion-and-conclusions)
 - [**6. References**](#6-references)
 - [**7. Supplementary Material**](#7-supplementary-material)
 
@@ -331,7 +331,7 @@ Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow int
 
 ---
 
-# **4. Evaluation & Results**
+# **4. Evaluation and Results**
 
 We report the experimental results of TinyODOM-EX across four neural architecture search studies on the Arduino Nano 33 BLE Sense (BLE33). All studies used the same model search space, training procedure, data splits, and hardware-in-the-loop (HIL) measurements described in [Section 3](#3-technical-approach). Results are reported in terms of prediction accuracy, deployability on the device under test and the practical tradeoffs between accuracy and on-device costs.
 
@@ -671,7 +671,7 @@ Collectively, these three plots support practical trial-budget guidance for this
 For future runs on similar workloads, a reasonable early stopping rule would be to terminate a single-objective study once the best score has not improved for 15 to 20 consecutive trials and for multi-objective studies to terminate once the hypervolume changes by less than 1% over the last 15 to 20 consecutive trials. 
 
 ---
-# **5. Discussion & Conclusions**
+# **5. Discussion and Conclusions**
 
 This section synthesizes the main results from the four studies, explains what they imply for energy-aware NAS on microcontrollers, and summarizes limitations and next steps.
 
@@ -717,28 +717,51 @@ TinyODOM-EX is an end-to-end hardware-in-the-loop NAS pipeline for microcontroll
 # **6. References**
 
 [1] O. J. Woodman, “An introduction to inertial navigation”.
+
 [2] C. Banbury et al., “MicroNets: Neural Network Architectures for Deploying TinyML Applications on Commodity Microcontrollers,” Apr. 12, 2021, arXiv: arXiv:2010.11267. doi: 10.48550/arXiv.2010.11267.
+
 [3] S. S. Saha, S. S. Sandha, L. A. Garcia, and M. Srivastava, “TinyOdom: Hardware-Aware Efficient Neural Inertial Navigation,” Proc. ACM Interact. Mob. Wearable Ubiquitous Technol., vol. 6, no. 2, pp. 1–32, July 2022, doi: 10.1145/3534594.
+
 [4] R. E. Kalman, “A New Approach to Linear Filtering and Prediction Problems,” Journal of Basic Engineering, vol. 82, no. 1, pp. 35–45, Mar. 1960, doi: 10.1115/1.3662552.
+
 [5] C. Chen, X. Lu, A. Markham, and N. Trigoni, “IONet: Learning to Cure the Curse of Drift in Inertial Odometry,” Jan. 30, 2018, arXiv: arXiv:1802.02209. doi: 10.48550/arXiv.1802.02209.
+
 [6] H. Yan, S. Herath, and Y. Furukawa, “RoNIN: Robust Neural Inertial Navigation in the Wild: Benchmark, Evaluations, and New Methods,” May 30, 2019, arXiv: arXiv:1905.12853. doi: 10.48550/arXiv.1905.12853.
+
 [7] “TensorFlow,” TensorFlow. Accessed: Dec. 14, 2025. [Online]. Available: https://www.tensorflow.org/
+
 [8] “Optuna: A hyperparameter optimization framework — Optuna 4.6.0 documentation.” Accessed: Dec. 14, 2025. [Online]. Available: https://optuna.readthedocs.io/en/stable/
+
 [8] C. Chen, P. Zhao, C. X. Lu, W. Wang, A. Markham, and N. Trigoni, “OxIOD: The Dataset for Deep Inertial Odometry,” Sept. 20, 2018, arXiv: arXiv:1809.07491. doi: 10.48550/arXiv.1809.07491.
+
 [9] S. Bai, J. Z. Kolter, and V. Koltun, “An Empirical Evaluation of Generic Convolutional and Recurrent Networks for Sequence Modeling,” Apr. 19, 2018, arXiv: arXiv:1803.01271. doi: 10.48550/arXiv.1803.01271.
+
 [10] J. Lin, W.-M. Chen, Y. Lin, J. Cohn, C. Gan, and S. Han, “MCUNet: Tiny Deep Learning on IoT Devices,” Nov. 19, 2020, arXiv: arXiv:2007.10319. doi: 10.48550/arXiv.2007.10319.
+
 [11] R. David et al., “TensorFlow Lite Micro: Embedded Machine Learning on TinyML Systems,” Mar. 13, 2021, arXiv: arXiv:2010.08678. doi: 10.48550/arXiv.2010.08678.
+
 [12] “ZeroMQ.” Accessed: Dec. 13, 2025. [Online]. Available: https://zeromq.org/get-started/
+
 [13] arduino/arduino-cli. (Dec. 13, 2025). Go. Arduino. Accessed: Dec. 13, 2025. [Online]. Available: https://github.com/arduino/arduino-cli
+
 [14] nesl/tinyodom. (Nov. 06, 2025). C++. UCLA Networked & Embedded Systems Laboratory. Accessed: Dec. 15, 2025. [Online]. Available: https://github.com/nesl/tinyodom
+
 [15] L. Clark, “Adafruit INA228 I2C Power Monitor Overview.” Accessed: Dec. 13, 2025. [Online]. Available: https://learn.adafruit.com/adafruit-ina228-i2c-power-monitor/overview
+
 [16] “INA228 85-V, 20-Bit, Ultra-Precise Power/Energy/Charge Monitor With I2C Interface Data sheet.” Texas Instruments, May 2022. Accessed: Dec. 13, 2025. [Online]. Available: https://www.ti.com/lit/ds/symlink/ina228.pdf?ts=1765620471468&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FINA228
+
 [17] S. S. Sandha, M. Aggarwal, I. Fedorov, and M. Srivastava, “Mango: A Python Library for Parallel Hyperparameter Tuning,” in ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), May 2020, pp. 3987–3991. doi: 10.1109/ICASSP40776.2020.9054609.
+
 [18] “Picoprobe debugging using another Pico – Raspberry Pi Projects,” Ibex Technology Development. Accessed: Dec. 13, 2025. [Online]. Available: https://raspberry-projects.com/pi/microcontrollers/programming-debugging-devices/debugging-using-another-pico
+
 [19] “rp2040 RUN pin reset implementation,” Raspberry Pi Forums. Accessed: Dec. 13, 2025. [Online]. Available: https://forums.raspberrypi.com/viewtopic.php?t=340911
+
 [20] J. Sturm, N. Engelhard, F. Endres, W. Burgard, and D. Cremers, “A benchmark for the evaluation of RGB-D SLAM systems,” in 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems, Oct. 2012, pp. 573–580. doi: 10.1109/IROS.2012.6385773.
+
 [21] J. Branke, K. Deb, H. Dierolf, and M. Osswald, “Finding Knees in Multi-objective Optimization,” in Parallel Problem Solving from Nature - PPSN VIII, vol. 3242, X. Yao, E. K. Burke, J. A. Lozano, J. Smith, J. J. Merelo-Guervós, J. A. Bullinaria, J. E. Rowe, P. Tiňo, A. Kabán, and H.-P. Schwefel, Eds., in Lecture Notes in Computer Science, vol. 3242. , Berlin, Heidelberg: Springer Berlin Heidelberg, 2004, pp. 722–731. doi: 10.1007/978-3-540-30217-9_73.
+
 [22] “nRF52840 Product Specification v1.11.” Nordic Semiconductor, Oct. 01, 2024.
+
 [23] M. Horowitz, “1.1 Computing’s energy problem (and what we can do about it),” in 2014 IEEE International Solid-State Circuits Conference Digest of Technical Papers (ISSCC), Feb. 2014, pp. 10–14. doi: 10.1109/ISSCC.2014.6757323.
 
 ---
