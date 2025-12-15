@@ -127,8 +127,6 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
     - [**4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**](#44-multi-objective-nas-accuracy-vs-latency-study-3)
     - [**4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**](#45-multi-objective-nas-accuracy-vs-energy-study-4)
     - [**4.6 Cross-Study Comparison and NAS Trial Budget**](#46-cross-study-comparison-and-nas-trial-budget)
-    - [**4.x Multi-Objective NAS**](#4x-multi-objective-nas)
-    - [**4.x NAS Trial Budget**](#4x-nas-trial-budget)
 - [**5. Discussion \& Conclusions**](#5-discussion--conclusions)
     - [**5.1 Summary of Key Findings**](#51-summary-of-key-findings)
     - [**5.2 Lessons from Energy-Aware NAS and HIL Infrastructure**](#52-lessons-from-energy-aware-nas-and-hil-infrastructure)
@@ -186,9 +184,9 @@ Joseph Zales ([GitHub](https://github.com/Joseph-Q-Zales))
 - Offer a concrete reference for structuring energy aware TinyML experiments, including how to couple Optuna, TFLite Micro, and Arduino CLI in a way that survives toolchain changes
 
 ### **1.5 Challenges**  
-While TinyODOM-EX’s technical goal is straightforward, implementing an end-to-end hardware-aware NAS loop exposed several practical challenges in system integration and experimental reliability. First, early experiments included the Arduino Nano RP2040 as a target. However, under repeated uploads cycles, it would fail to re-enter the bootloader mode (BOOTSEL) without manual intervention, preventing it from being used unattended. As a result, the final studies focus on the Arduino Nano 33 BLE Sense, with RP2040's limitations documented as a negative result and a driver for future design choices (see [Section 3.5.3](#353-dropping-the-arduino-nano-rp2040-target-from-final-studies) for details and a plausible fix).
+While TinyODOM-EX’s technical goal is straightforward, implementing an end-to-end hardware-aware NAS loop exposed several practical challenges in system integration and experimental reliability. First, early experiments included the Arduino Nano RP2040 as a target. However, under repeated upload cycles, it would fail to re-enter the bootloader mode (BOOTSEL) without manual intervention, preventing it from being used unattended. As a result, the final studies focus on the Arduino Nano 33 BLE Sense, with RP2040's limitations documented as a negative result and a driver for future design choices (see [Section 3.5.3](#353-dropping-the-arduino-nano-rp2040-target-from-final-studies) for details and a plausible fix).
 
-Second, TinyODOM-EX required modernizing a large portion of the software and and toolchain while trying to maintain the same behavior as the previous work, TinyODOM [CITE, TinyODOM]. This included upgrading the Python and TensorFlow stacks and adopting the Arduino CLI toolchain (see [Section 3](#3-technical-approach) for details). Ensuring consistency quickly became non-trivial as the amount of code needing to change grew rapidly. Due to these changes, unit test were created to help deal with some of the more finicky changes. 
+Second, TinyODOM-EX required modernizing a large portion of the software and and toolchain while trying to maintain the same behavior as the previous work, TinyODOM [CITE, TinyODOM]. This included upgrading the Python and TensorFlow stacks and adopting the Arduino CLI toolchain (see [Section 3](#3-technical-approach) for details). Ensuring consistency quickly became non-trivial as the amount of code needing to change grew rapidly. Due to these changes, unit tests were created to help deal with some of the more finicky changes. 
 
 Third, debugging became inherently cross-layered and often took place across both the GPU server and the HIL machine. Many unexpected failures only appeared in the middle of long NAS runs, where the study state had to be compared with the program logs, Arduino CLI build output and telemetry from the device. This motivated more structured logging and explicit error handling so that failures could be diagnosed quickly
 
@@ -237,7 +235,7 @@ TinyODOM-EX refactors the legacy jupyter-notebook-style workflow into a modular 
 
 Figure Y expands the system overview by showing the end-to-end steps executed for a single trial. Each Optuna trial corresponds to one sampled candidate architecture. The NAS client (the GPU server) sends the HIL server (the HIL machine) the hyperparameters, which are then built into a TensorFlow model, converted into a TensorFlow Lite Micro model, and compiled via the Arduino CLI [CITE, Arduino-CLI]. The CLI returns the compiled RAM and flash sizes needed for this model. 
 
-At this point, the arena, the statically allocated tensor arena buffer used by TensorFlow Lite Micro to allocate activation tensors and operator scratch space at runtime [CITE, TFLM], is either stepped up or down in size depending on if the model will fit on the board. If TensorFlow Lite Micro cannot successfully allocate tensors within the arena (even after searching across allowable arena sizes), the trial stops here and is pruned so that the expensive steps of flashing and GPU training are avoided. If the arena search is exhausted, the trial stops there and is pruned so that the expensive step of uploading and model training is avoided. If an ideal arena size can be found, the model is uploaded to the DUT and inference is run with 10 windows. This is a departure from TinyODOM which only ran inference with one window [CITE, TinyODOM code].By averaging the latency per window (and energy per inference when the INA228 measurement path is enabled) across 10 windows, the startup cost is amortized and the true latency and energy per inference can be better determined. The latency per inference, the energy per inference, RAM and flash size is then passed back to the GPU server in the ZMQ response. The GPU server then trains the candidate model and all of the metrics are returned to the NAS and incorporated into the study objective. After receiving these hardware-grounded metrics, the GPU server trains the same candidate architecture and evaluates it on the validation split, then incorporates both validation accuracy and the returned hardware metrics into the study objective.
+At this point, the arena, the statically allocated tensor arena buffer used by TensorFlow Lite Micro to allocate activation tensors and operator scratch space at runtime [CITE, TFLM], is either stepped up or down in size depending on if the model will fit on the board. If TensorFlow Lite Micro cannot successfully allocate tensors within the arena (even after searching across allowable arena sizes), the trial stops here and is pruned so that the expensive steps of flashing and GPU training are avoided. If the arena search is exhausted, the trial stops there and is pruned so that the expensive step of uploading and model training is avoided. If an ideal arena size can be found, the model is uploaded to the DUT and inference is run with 10 windows. This is a departure from TinyODOM which only ran inference with one window [CITE, TinyODOM code]. By averaging the latency per window (and energy per inference when the INA228 measurement path is enabled) across 10 windows, the startup cost is amortized and the true latency and energy per inference can be better determined. The latency per inference, the energy per inference, RAM and flash size is then passed back to the GPU server in the ZMQ response. The GPU server then trains the candidate model and all of the metrics are returned to the NAS and incorporated into the study objective. After receiving these hardware-grounded metrics, the GPU server trains the same candidate architecture and evaluates it on the validation split, then incorporates both validation accuracy and the returned hardware metrics into the study objective.
 
 #### **3.1.2 Configuration**
 TinyODOM-EX replaces hard-coded constants in the legacy notebook with a YAML configuration file (`nas_config.yaml`) that captures device settings, dataset parameters, training budgets, etc. This configuration file is shared between the GPU server and the HIL machine. At the end of the study, this configuration is copied into the study output directory so that each run is self-describing and can be reproduced. 
@@ -405,34 +403,114 @@ Finally, TinyODOM-EX's refactor from a monolithic, jupyter-notebook workflow int
 
 ### **4.2 Reproducing TinyODOM on BLE33 (Study 1)**
 
-#### **4.2.1 Baseline Model Quality**
+Study 1 establishes the baseline TinyODOM-EX reproduction of the TinyODOM model on the BLE33 using the single-objective non-energy-aware scoring function. Section 4.2.1 defines the selected baseline model and section 4.2.2 uses the qualitative trajectory plots to show how small errors translate into integrated position drift.
 
-- Compare TinyODOM-like model performance on BLE33 to original TinyODOM results [1]
-- Figures
-  - Trajectory overlays: model vs ground truth and bias-corrected IMU integration baseline
-  - Velocity time-series and/or error-over-time plots for representative sequences
-  - Predicted vs true velocity histograms to assess calibration
-- Table of baseline metrics
-  - RMSE per axis, trajectory error, summary across key OxIOD sequences
-- Interpretation
-  - Where the learned model improves over the classical baseline
-  - Failure modes and typical error patterns
+#### **4.2.1 Baseline Model and Deployment Profile**
 
-#### **4.2.2 Baseline Latency and Model Size Profile**
+This subsection establishes the Study 1 baseline model used throughout Section 4.2, defined as the best-scoring fully completed trial under the single-objective scoring function.
 
-- Report typical latency and model size for the best TinyODOM-like model(s)
-  - Table with: latency per inference, flash usage, RAM usage for 1–2 representative models
-- Brief note on constraint handling
-  - By design, the NAS loop prunes or discards trials that exceed BLE33 flash/RAM limits
-  - As a result, all models discussed in this section satisfy deployment constraints by construction
-- Interpretation
-  - Position baseline TinyODOM-like models on the latency / size spectrum
-  - Use this as a reference point for later energy-aware and multi-objective models
+In the table below, two families of accuracy metrics are reported. First is the velocity RMSE (m/s) which evaluates the model in the same space that it predicts. This is the most direct measure of its capabilities and is included in how the model is scored (see [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details). The second family is ATE (Absolute Trajectory Error) and RTE (Relative Trajectory Error), computed from the position tracks obtained by integrating the window-level velocity predictions over time using the same `Cal_TE` evaluation used by TinyODOM [CITE, TinyODOM code]. Using the same fuction enables a like-for-like comparison, even though the hardware and deployment toolchains differ. These metrics evaluate how well the model tracks the position estimate found by integrating the velocities over time. ATE summarizes the end-to-end trajectory deviation (i.e. how far the integrated position estimate departs from the ground truth over the full sequence). RTE summarizes local drift (i.e. the error in relative motion over shorter horizons) and is typically less sensitive to long-horizon error accumulation than ATE [CITE, Sturm].
 
+<figure style="text-align: left">
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table X.</strong> Baseline (Study 1) best model summary on BLE33.
+  </figcaption>
+</figure>
+| Metric                                |     Value |
+| ------------------------------------- | --------: |
+| Scalar score                          |      -0.4 |
+| Velocity RMSE (x)                     |     0.203 |
+| Velocity RMSE (y)                     |     0.204 |
+| Latency per inference                 |  154.5 ms |
+| RAM (Arduino-CLI, globals)            |     98 kB |
+| Flash (Arduino-CLI, total sketch)     |    379 kB |
+| TFLite model size                     |   41.7 kB |
+| FLOPs                                 |    4.17 M |
+| Test ATE (median Test trajectories)   |    4.71 m |
+| Test RTE (median Test trajectories)   |    1.53 m |
+
+
+<figure style="text-align: left">
+  <img src="./assets/img/no_energy_best_model.png"
+       alt="Non-energy aware model architecture"
+       width="700" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X-this.</strong>  Architecture diagram of the selected Study 1 baseline model (TinyODOM-like), as deployed on the BLE33. The model consists of a compact TCN front end followed by small dense heads for v<sub>x</sub> and v<sub>y</sub>. The diagram highlights the key selected architectural knobs, such as nb_filters = 10 and kernel_size = 12.
+  </figcaption>
+</figure>
+
+The measured latency and memory footprint indicate that the selected baseline is deployable on the BLE33 under the 200 ms real-time budget used in this report. The velocity RMSE can still look good while the position drift increases because the integration amplifies the small bias and error. ATE captures longer-horizon errors, while RTE captures shorter horizon errors. This is why the remainder of this section pairs velocity plots with drift and integrated position plots instead of treating the velocity RMSE as sufficient evidence of a working model.
+
+<figure style="text-align: left">
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table Y.</strong> TinyODOM paper results for OxIOD [CITE, TinyODOM]. This table is provided for context and model-level comparison. Note, TinyODOM's configuration uses a stride of 10, while this work uses a stride of 20.
+  </figcaption>
+</figure>
+| Method / Target                                           | SRAM (kB) | Flash (kB) | FLOPs (M) |  ATE (m) |  RTE (m) |
+| --------------------------------------------------------- | --------: | ---------: | --------: | -------: | -------: |
+| TinyODOM (STM32F446RE) [1]                                |      52.4 |       71.6 |      4.64 |     3.30 |     1.24 |
+| TinyODOM (STM32L476RG) [1]                                |      72.5 |       89.6 |      6.65 |     3.59 |     1.37 |
+| TinyODOM (STM32F407VET6) [1]                              |      90.1 |      117.6 |      8.92 |     6.82 |     1.28 |
+| TinyODOM (STM32F746ZG) [1]                                |      55.5 |       71.0 |      4.92 |     2.80 |     1.26 |
+| **This work (BLE33, Study 1 baseline, median over test)** |    **98** |    **379** |  **4.17** | **4.71** | **1.53** |
+
+
+Comparing these numbers in Table Y to Table X listed above, the flash and RAM values in the TinyODOM-EX look large. This is because these values come from Arduino's compile time summary which reflect the entire firmware image, not just the learned model. That includes the TFLM runtime code, operator kernels, sensor I/O and whatever code is needed to communicate with the underlying MBED RTOS. Additionally, the RAM number includes the statically allocated arena (see [Section 3.1](#31-tinyodom-ex-system-architecture) for details on the arena). Because the arena is statically allocated, the reported RAM number provides a conservative view of the memory. The flash cost for the embedded model data is likely much closer to the TFLite model size (41.7 kB). It is not clear if TinyODOM's flash and RAM reported numbers include these things or not. For that reason, the comparison in values may or may not be an apples-to-apples. 
+
+However, we can compare some aspects of these models. For example, our baseline model uses slightly fewer FLOPs than any of those reported by TinyODOM. It is therefore not surprising that the median ATE and RTE values are higher. The key takeaway is that these numbers are still in family.
+
+#### **4.2.2 Qualitative baseline evaluation**
+
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_no_E_trajectory_drift_diagnostics.png"
+       alt="OxIOD test split drift over time"
+       width="600" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.1.</strong> Integrated position drift across the test split from the Study 1 baseline. Left: cumulative position error magnitude over time. Right: position error components in x (solid) and y (dashed).
+  </figcaption>
+</figure>
+
+Figure X.1 provides a modality-level view of how integrated position error drift accumulates over time. This plot shows the potential downside for only having seven trajectories in the test split given the differences between modalities, its hard to determine if the differences in errors are due to the modality itself or because of that particular trajectory. Several of the trajectories exhibit steadily increasing drift. Pocket (aka Trajectory 3) stands out as both the longest evaluated sequence in the test split, but also one of the lowest error accumulations at the end of the horizon. This combination makes it useful as the model trajectory and the remaining plots in this subsection will make use of it. 
+
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_no_E_velocity_over_time_traj_3.png"
+       alt="Trajectory 3 velocity over time"
+       width="650" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.2.</strong> Velocity prediction over time for Trajectory 3 (Pocket), showing ground-truth versus predicted v<sub>x</sub> and v<sub>y</sub>. Per-axis RMSE on this trajectory is 0.12 m/s for v<sub>x</sub>  and 0.113 m/s for v<sub>y</sub>. 
+  </figcaption>
+</figure>
+
+Figure X.2 shows the model outputs in the same space the network predicts. The predicted waveforms track the structure in both axes with relatively small residual error, including good alignment on the major peaks and troughs through the sequence. This behavior is consistent with teh aggregate velocity RMSE reported in Table X-this.
+
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_no_E_trajectory_3_model_vs_accel.png"
+       alt="Trajectory 3 position"
+       width="650" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.3.</strong> Trajectory 3 position overlay comparing ground truth, the model-integrated trajectory, and a naive acceleration baseline formed by raw double integration. The model-integrated trajectory achieves an ATE = 7.69 m, while the naive acceleration baseline diverges by serveral orders of magnitude (ATE=63,897.98 m).
+  </figcaption>
+</figure>
+
+<figure style="text-align: left">
+  <img src="./assets/plots/SF_no_E_trajectory_3_position_error_evolution.png"
+       alt="Trajectory 3 position error over time"
+       width="450" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.4.</strong> Trajectory 3 position error evolution on a logarithmic scale comparing the model-integrated trajectory against the naive acceleration baseline.
+  </figcaption>
+</figure>
+
+Figure X.3 illustrates the the central caveat to inertial odometry, that small velocity errors can accumulate into noticeable position drift, even when the velocity traces look well aligned. The model-integrated path deviated from the ground truth over time, but it remains dramatically more stable than the naive double integration of the raw acceleration. The log-scale error plot (Figure X.4) makes that separation clear, with over four orders of magnitude improvement in the final position error vs the naive baseline.
 
 ### **4.3 Single-Objective Energy-Aware NAS on BLE33 (Study 2)**
 
-The single-objective NAS runs use a scalar score that combines accuracy, memory, latency, and (optionally) energy per inference. For each trial, the validation velocity RMSE in x and y is converted into an accuracy term, a small resource term encodes relative RAM and flash usage, and latency and energy penalties are applied when the BLE33 hardware measurements exceed a 200 ms latency budget and an implicit 10 mJ energy target. See [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details on the score function. Note that higher scores correspond to lower validation error and fewer constraint violations. Scores in all but a handful of trials were negative.
+Study 2 tests whether explicit energy measurement is necessary to guide NAS on the BLE33. We run two otherwise identical single-objective studies (75 trials each): one without energy logging and one with an INA228-based energy-per-inference penalty. Each trial is scored with a scalar objective that combines accuracy, memory, and on-device constraints. See [Section 3.3](#33-nas-objective-search-space-and-training-procedure) for details on the score function. Section 4.3.1 compares how the score components shift with energy logging, and Section 4.3.2 quantifies the empirical energy–latency relationship on this target.
 
 #### **4.3.1 Effect of Energy Logging on NAS Outcome**
 
@@ -441,8 +519,6 @@ The single-objective NAS runs use a scalar score that combines accuracy, memory,
     <strong>Table X.</strong> Heuristic contributions of each term to the absolute scalar score for the single-objective NAS runs on BLE33 (75 trials each). The score combines accuracy, resource usage, latency, and optional energy penalties.
   </figcaption>
 </figure>
-
-
 | Term            | No-energy score (%) | Energy-aware score (%) |
 |-----------------|---------------------|------------------------|
 | `model_acc`     | 77.4                | 55.1                   |
@@ -457,7 +533,8 @@ The mean model accuracy value becomes slightly more negative in the energy-aware
 
 
 #### **4.3.2 Empirical Relationship Between Energy and Latency**
-A central question in TinyODOM-EX is whether energy must be modeled and optimized explicitly, or whether latency alone is a sufficient proxy on the BLE33. Adding energy awareness increases system complexity and adds an additional source of experimental variance. This section quantifies how tightly energy per inference and latency per inference are coupled in practice. The key result is that, for this target and workload,  
+A central question in TinyODOM-EX is whether energy must be modeled and optimized explicitly, or whether latency alone is a sufficient proxy on the BLE33. Adding energy awareness increases system complexity and adds an additional source of experimental variance. This section quantifies how tightly energy per inference and latency per inference are coupled in practice. 
+
 
 <figure style="text-align: left">
   <img src="./assets/plots/SF_EA_energy_latency_diagnostics.png"
@@ -469,11 +546,43 @@ A central question in TinyODOM-EX is whether energy must be modeled and optimize
   </figcaption>
 </figure>
 
-Figure X (left) shows a near-linear relationship between energy per inference and latency across the measured trials. The fitted lined, `Energy (mJ) ≈ 0.053 * Latency (ms) + 0.123`, indicates that most of the variation in energy is explained by the latency alone. This slope, 0.053 mJ/ms, corresponds to an average inference power of approximately 53 mW (since mJ/ms is equivalent to Watts). This implies that candidates primarily change the duration of the computation, while the average power during inference remains relatively stable. The non-zero intercept, 0.123 mJ, suggests a small fixed energy overhead per inference that does not scale with latency. This could be anything from constant work outside the model's main compute or framework overhead.
+Figure X (left) shows a near-linear relationship between energy per inference and latency across the measured trials. The fitted lined, `Energy (mJ) ≈ 0.053 * Latency (ms) + 0.123`, indicates that most of the variation in energy is explained by latency alone. This slope, 0.053 mJ/ms, corresponds to an average inference power of approximately 53 mW (since mJ/ms is equivalent to watts). This implies that candidates primarily change the duration of the computation, while the average power during inference remains relatively stable. The non-zero intercept, 0.123 mJ, suggests a small fixed energy overhead per inference that does not scale with latency (e.g. runtime overhead or measurement framing). 
 
 Figure X (right) explains the shape of the average-power plot. If energy is approximately linear with time, `E = a*t + b`, then the average power is `P_avg = E/t ≈ a + b/t`. This would produce a hyperbolic asymptote at a (53 mW) and the values would plateau at around that value for higher latencies. On the other hand, very short latency trials appear to have a higher power because the fixed-energy term b contributes more strongly when divided by a small t.
 
 Taken together, these observations indicate that, for the BLE33 and the TinyODOM-EX inference workload, energy and latency are tightly coupled across the explored architecture space. As a result, latency serves as a strong proxy for energy over the dominant operating range of interest, and explicitly optimizing energy is unlikely to change model selection except in the very low-latency regime where fixed overheads and modest power variation become more visible.
+
+#### **4.3.3 Best Energy-Aware Model**
+<figure style="text-align: left">
+  <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
+    <strong>Table X.</strong> Best completed model from Study 2 (energy aware) on BLE33.
+  </figcaption>
+</figure>
+| Metric                               |    Value |
+| ------------------------------------ | -------: |
+| Scalar score (energy-aware)          |    0.069 |
+| Velocity RMSE (x)                    |    0.217 |
+| Velocity RMSE (y)                    |    0.223 |
+| Energy per inference                 |  5.75 mJ |
+| Latency per inference                | 106.4 ms |
+| RAM (Arduino-CLI, globals)           |  77.9 kB |
+| Flash (Arduino-CLI, total sketch)    | 381.5 kB |
+| TFLite model size                    |  35.7 kB |
+| FLOPs                                |   3.16 M |
+| Test ATE (median Test trajectories)  |   9.75 m |
+| Test RTE (median Test trajectories)  |   2.68 m |
+
+<figure style="text-align: left">
+  <img src="./assets/img/energy_aware_best_model.png"
+       alt="Energy aware best model architecture"
+       width="700" 
+       style="display:block; margin:0 auto;"/>
+  <figcaption style="font-size: 0.9em; color: #555; margin-top: 4px;">
+    <strong>Figure X.</strong> Architecture diagram of the best Study 2 energy-aware model deployed on the BLE33. The model uses a compact TCN front end followed by a small dense layer and per-axis regression heads.
+  </figcaption>
+</figure>
+
+Relative to the Study 1 baseline, the best Study 2 model achieves substantially lower latency (106.4 ms vs. 154.5 ms) and correspondingly lower energy per inference (5.75 mJ), while using fewer FLOPs (3.16 M vs. 4.17 M) and less RAM (77.9 kB vs. 98 kB). This comes with a modest increase in velocity RMSE (0.217/0.223 vs. 0.203/0.204). Consistent with the reduced compute budget, the median trajectory metrics also degrade on the test split (ATE 9.75 m vs. 4.71 m, RTE 2.68 m vs. 1.53 m), indicating that the energy-aware objective can select models that are cheaper to run while sacrificing integrated drift performance. This increase in error is likely due to the energy term in the objective, which rewards candidates that reduce measured energy per inference under the evaluation target, even when that requires trading away some accuracy. This pushed the model to be smaller (and faster), but also pushed it left on the Pareto front (see the next section for details) and therefore is less accurate. Consistent with this shift, the selected architecture also changes (Figure X). The TCN kernel size decreases from 12 to 8. A smaller kernel reduces the temporal receptive field per layer and typically reduces compute, which is consistent with the observed drop in FLOPs and latency.
 
 ### **4.4 Multi-Objective NAS: Accuracy vs Latency (Study 3)**
 In Study 3, we reformulate the search as a true multi-objective optimization over model accuracy and on-device inference latency. This makes the real deployment tradeoff explicit: lower RMSE typically requires more compute, but real-time operation imposes a hard upper limit on latency set by the streaming update schedule. Rather than collapsing these competing goals into a single weighted score like in Study 1, we use Optuna's multi-objective search to recover a Pareto Frontier, then analyze the results to identify if the real-time constraint is feasible and which hyperparameters most strongly control the accuracy-latency tradeoff.
@@ -513,7 +622,7 @@ The bottom row shows that `kernel_size` is a much weaker knob. Good and bad mode
 A similar Optuna hyperparameter-importance analysis for the accuracy–latency run (not shown) yields the same qualitative ranking as the energy-aware study (see Fig. Z in [Section 4.5.2](#452-energy-oriented-hyperparameter-structure) for details). In both cases,  `nb_filters` dominates, `kernel_size` has moderate influence, and the remaining knobs contribute very little. This supports treating `nb_filters` as the primary design knob in the rest of our analysis.
 
 ### **4.5 Multi-Objective NAS: Accuracy vs Energy (Study 4)**
-Study 4 extends the multi-objective formulation to explicitly include energy per inference, measured with the inline INA228 as described in (Section 3.4)[#34-hardware-in-the-loop-measurement-and-implementation]. Latency is a useful proxy for cost, but energy is the more direct constraint for battery-powered and energy-harvesting deployments. By optimizing accuracy and energy jointly, we obtain the accuracy-energy Pareto frontier that highights the "efficient" region of the design space and enables the selection of models that meet a target energy budget while retaining most of the achievable accuracy. Similar to Study 3, we then identify the most important hyperparameters for the design space.
+Study 4 extends the multi-objective formulation to explicitly include energy per inference, measured with the inline INA228 as described in [Section 3.](#34-hardware-in-the-loop-measurement-and-implementation). Latency is a useful proxy for cost, but energy is the more direct constraint for battery-powered and energy-harvesting deployments. By optimizing accuracy and energy jointly, we obtain the accuracy-energy Pareto frontier that highights the "efficient" region of the design space and enables the selection of models that meet a target energy budget while retaining most of the achievable accuracy. Similar to Study 3, we then identify the most important hyperparameters for the design space.
 
 #### **4.5.1 Pareto Front**
 
@@ -528,7 +637,7 @@ Study 4 extends the multi-objective formulation to explicitly include energy per
 </figure>
 
 
-Figure X shows the tradeoff in the accuracy–energy space for the energy-aware multi objective run. As in the latency plot in [Section 4.4.1](#441-pareto-front-and-convergence), the blue points indicate the search covers a broad spectrum of designs, while the red curve again highlights the nondominated trials. Again, similar to the accuracy-latency plot, the Pareto front has a steep initial segment moving from the lowest energy models to more expensive trials initially yields large reductions in aggregate RMSE. Around a mid range energy level, near the 10mJ target implied by the 200ms latency budget and a 50mW nominal power draw, the curve indicates diminishing returns.
+Figure X shows the tradeoff in the accuracy–energy space for the energy-aware multi-objective run. As in the latency plot in [Section 4.4.1](#441-pareto-front-and-convergence), the blue points indicate the search covers a broad spectrum of designs, while the red curve again highlights the nondominated trials. Again, similar to the accuracy-latency plot, the Pareto front has a steep initial segment moving from the lowest energy models to more expensive trials initially yields large reductions in aggregate RMSE. Around a mid range energy level, near the 10mJ target implied by the 200ms latency budget and a 50mW nominal power draw, the curve indicates diminishing returns.
 
 This shape suggests a natural operating regime for deployment. Very low energy models exist, but they incur substantial error. Increasing energy per inference up to the mid range buys most of the available accuracy improvement, while pushing to very high energy models produces only small additional gains. Together with the accuracy–latency Pareto in Figure X in [Section 4.4.1](#441-pareto-front-and-convergence), these curve show that the search space contains models that are both reasonably accurate, energy efficient and operate in a real-time setting.
 
@@ -581,7 +690,7 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Practical guidance: recommended trial counts for future runs on similar hardware
   - Discussion of remaining uncertainty and where more budget might still help
 
-### **4.x Multi-Objective NAS**
+<!-- ### **4.x Multi-Objective NAS**
 - Pareto Frontiers for both latency and EA studies
 
 ### **4.x NAS Trial Budget**
@@ -625,7 +734,7 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
 - **Potential stopping criteria for future runs**
   - Single-objective: stop if the best score has not improved for the last 15–20 trials.
   - Multi-objective: stop if hypervolume has improved by less than ~1 percent over the last 20 trials.
-  - These criteria formalize the convergence behavior observed in the plots.
+  - These criteria formalize the convergence behavior observed in the plots. -->
 
 
 ---
@@ -639,6 +748,7 @@ Figure Z summarizes this pattern using Optuna’s hyperparameter importance metr
   - Observation of clear accuracy–latency–energy tradeoffs and identification of nb_filters as the dominant hyperparameter.
 - High-level statement of what the results collectively show about energy-aware NAS on microcontrollers.
 
+Although we report ATE/RTE and resource metrics alongside TinyODOM’s OxIOD table, the comparison is not strictly apples-to-apples. First, ATE/RTE are sensitive to the streaming configuration because integrating window-level velocities uses an effective timestep of dt = stride / sampling_rate. A larger stride increases the integration step and can change drift behavior even when velocity RMSE is similar. Second, flash and RAM accounting is toolchain-specific. The Arduino CLI “Sketch uses … bytes” and “Global variables use … bytes” values reflect the full linked image on the BLE33, including runtime and support code, whereas TinyODOM’s reported flash/RAM values may reflect a different firmware baseline and build system. This helps explain how models can appear both smaller and better-performing in the TinyODOM table. Notably, the flatbuffer model itself here is only 40.84 KiB, while the deployed flash footprint (379 kB) includes additional firmware overhead beyond the model weights.
 
 #### **5.1.1 Latency and Energy are Tightly Coupled**
 One reason this coupling is so strong on the BLE33 is that inference executes on a sequential general-purpose MCU core (Nordic nRF52840, ARM Cortex-M4F) with limited parallel compute resources [CITE, NEEDED]. For this target, most architectural changes effectively scale the number of executed operations, which changes inference time more than it changes average power at a fixed operating point. As a result, energy tends to scale approximately with latency (energy ≈ power × time) over the explored search space.
