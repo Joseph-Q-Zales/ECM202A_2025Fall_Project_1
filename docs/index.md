@@ -447,6 +447,7 @@ The measured latency and memory footprint indicate that the selected baseline is
     <strong>Table Y.</strong> TinyODOM paper results for OxIOD [CITE, TinyODOM]. This table is provided for context and model-level comparison. Note, TinyODOM's configuration uses a stride of 10, while this work uses a stride of 20.
   </figcaption>
 </figure>
+
 | Method / Target                                           | SRAM (kB) | Flash (kB) | FLOPs (M) |  ATE (m) |  RTE (m) |
 | --------------------------------------------------------- | --------: | ---------: | --------: | -------: | -------: |
 | TinyODOM (STM32F446RE) [1]                                |      52.4 |       71.6 |      4.64 |     3.30 |     1.24 |
@@ -519,6 +520,7 @@ Study 2 tests whether explicit energy measurement is necessary to guide NAS on t
     <strong>Table X.</strong> Heuristic contributions of each term to the absolute scalar score for the single-objective NAS runs on BLE33 (75 trials each). The score combines accuracy, resource usage, latency, and optional energy penalties.
   </figcaption>
 </figure>
+
 | Term            | No-energy score (%) | Energy-aware score (%) |
 |-----------------|---------------------|------------------------|
 | `model_acc`     | 77.4                | 55.1                   |
@@ -558,6 +560,7 @@ Taken together, these observations indicate that, for the BLE33 and the TinyODOM
     <strong>Table X.</strong> Best completed model from Study 2 (energy aware) on BLE33.
   </figcaption>
 </figure>
+
 | Metric                               |    Value |
 | ------------------------------------ | -------: |
 | Scalar score (energy-aware)          |    0.069 |
