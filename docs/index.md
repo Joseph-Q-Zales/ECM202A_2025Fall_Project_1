@@ -108,7 +108,6 @@ Ultra-low-power inertial odometry is valuable in settings without GPS, but embed
     - [**1.5 Challenges**](#15-challenges)
     - [**1.6 Metrics of Success**](#16-metrics-of-success)
 - [**2. Related Work**](#2-related-work)
-    - [\*\*2.1](#21)
 - [**3. Technical Approach**](#3-technical-approach)
     - [**3.1 TinyODOM-EX System Architecture**](#31-tinyodom-ex-system-architecture)
     - [**3.2 Dataset and Windowing Pipeline**](#32-dataset-and-windowing-pipeline)
@@ -157,7 +156,6 @@ Hardware-aware NAS and TinyML toolchains aim to close this gap by searching for 
 
 ### **1.3 Novelty & Rationale**  
 
-
 To the best of our knowledge, this is the first work to incorporate direct hardware-in-the-loop energy measurements into the Neural Architecture Search (NAS)  loop for microcontroller-class inertial odometry. While prior work like TinyODOM demonstrated the feasibility of finding lightweight models, they relied on proxy metrics like latency and FLOPs or simulated constraints [CITE, TinyODOM]. This leaves a gap where a model might be fast, but energy inefficient due to peripheral usage or memory access patterns.
 
 We address this by physically instrumenting the BLE33, measuring the exact joules consumed per inference. Furthermore, we modernized the engineering stack by refactoring the original notebook-based workflow into a modular client–server architecture built around TensorFlow 2 and Optuna [CITE, TensorFlow] [CITE, Optuna]. This modularization is intended to improve reproducibility and make it easier to extend experiments to new hardware targets
@@ -185,14 +183,10 @@ We evaluate TinyODOM-EX using three criteria for success: quantitative model per
 ---
 
 # **2. Related Work**
-This section reviews the research domains foundational to our work, including deep inertial navigation, hardware-aware architecture search, and modern optimization strategies.
 
-### **2.1 
+Learning-based inertial odometry methods aim to estimate motion directly from IMU signals by learning sensor bias compensation and motion dynamics from data. Often this improves robustness relative to naive integration and hand-tuned filtering pipelines [CITE, IONet] [CITE, RoNIN]. Public datasets such as OxIOD have enabled standardized evaluation by providing synchronized IMU streams with high-quality ground truth across multiple carrying modalities [CITE, OxIOD]. For microcontroller deployment, TinyODOM is the closest predecessor to this project. It uses hardware-aware NAS to discover Temporal Convolutional Networks (TCNs) deployable inertial odometry models under memory and latency constraints on MCU-class targets [CITE, TinyODOM]. However, energy per inference is not measured or treated as a first-class optimization objective, despite being a binding constraint for many battery-powered and energy-harvesting deployments [CITE, MicroNets].
 
-
-- Deep inertial odometry and navigation: TinyODOM, OxIOD dataset, other IMU only or phone based inertial odometry systems and their focus on accuracy over energy
-- Hardware aware NAS and TinyML: works that co optimize models for microcontrollers using memory and latency constraints, but without explicit energy measurement
-- Optimization methods and architectures: black box optimizers including Optuna, earlier tuners such as Mango, and core TCN papers that justify the chosen search space
+More broadly, hardware-aware TinyML and NAS workflows constrain architectures to meet flash, RAM, and latency limits and leverage deployable runtimes such as TensorFlow Lite Micro [CITE, MCUNet] [CITE, TFLM]. These methods often rely on proxies (for example FLOPs, parameter count, or measured latency) rather than direct energy measurements, and latency is not guaranteed to uniquely determine energy across devices and workloads. TinyODOM-EX builds on these foundations by adding closed-loop hardware-in-the-loop energy per inference measurement to the NAS loop, and by using Optuna to support both single-objective scoring studies and multi-objective Pareto-front analyses over accuracy, latency, and energy [CITE, Optuna].
 
 ---
 
@@ -270,7 +264,7 @@ Similar to TinyODOM, the window size for these studies was 200 samples [CITE, Ti
 
 This report uses the same terminology for experimentation as Optuna. A "study" refers to a full Optuna run with an objective, and a trial refers to one architecture and its resulting training, validation and hardware measurements [CITE, Optuna trial]. TinyODOM-EX supports both single-objective (optimization with a scoring function) and multi-objective studies, with the configuration file controlling which type is run and whether energy is included in the optimization. 
 
-TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution network that maps the windowed inertial inputs to velocity (x and y) outputs. The search space is derived from the TinyODOM TCN design, while extending evaluation to incorporate hardware-grounded constraints *and* measured energy [CITE, TinyODOM]. Across the full set of sampled hyperparemeters (detailed in Table 3.1) for TinyODOM-EX, the search space spans approximately 8 million candidate combinations. 
+TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution network that maps the windowed inertial inputs to velocity (x and y) outputs. The search space is derived from the TinyODOM TCN design, while extending evaluation to incorporate hardware-grounded constraints *and* measured energy [CITE, TinyODOM]. Across the full set of sampled hyperparameters (detailed in Table 3.1) for TinyODOM-EX, the search space spans approximately 8 million candidate combinations. 
 
 <figure style="text-align: left">
   <figcaption style="font-size: 0.9em; color: #555; margin-bottom: 4px;">
@@ -287,7 +281,7 @@ TinyODOM-EX's NAS searches over hyperparameters for a temporal convolution netwo
 | norm_flag            | T/F                            | Normalization                                            |
 | dilations            | Categorical (465 options)      | Pattern of dilation across layers (e.g., [1, 4, 16, 32]) |
 
-The hyperparemeters in Table X jointly influence not only the accuracy of the model (RMSE), but also the feasibility of deployment to the target due to the flash/RAM constraints.
+The hyperparameters in Table X jointly influence not only the accuracy of the model (RMSE), but also the feasibility of deployment to the target due to the flash/RAM constraints.
 
 #### **3.3.1 Objective Functions**
 For single objective studies, TinyODOM-EX uses a score function that combines the validation accuracy, memory usage, latency and energy per inference (see Eq. 1). Accuracy is computed from the validation RMSE on the predicted velocity components. Memory terms are computed from the reported flash and RAM usage (returned by the HIL pipeline). Even though latency was included as a metric in TinyODOM, we chose to change how the penalty was calculated. In TinyODOM, the latency penalty was a scalar multiplied by the latency in milliseconds [CITE, TinyODOM code]. We found that this was challenging to tune and decided to instead compare the latency to the real-time budget and only apply the latency penalty when the measured latency exceeded the budget. The budget is derived based on the sampling rate and stride length. We also decided to clamp that penalty to a maximum of 2 in order to keep the scores reasonable (see Eq. 2). When energy is enabled (based on the config), the score penalizes candidates whose measured energy exceed a target. In our experiments, we chose to use 10 mJ as our target. Note, that unlike the latency penalty, the energy penalty could actually be a bonus if the power was less than the target.
